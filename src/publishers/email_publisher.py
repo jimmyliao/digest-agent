@@ -121,8 +121,8 @@ class EmailPublisher(BasePublisher):
     </div>
     {articles_html}
     <div style="text-align:center;padding:16px;color:#999;font-size:12px;border-top:1px solid #eee;">
-        ⭐ 覺得好用？<a href="{REPO_URL}" style="color:#1a73e8;">請幫忙點個 Star</a>
-        &nbsp;·&nbsp; Powered by <a href="{REPO_URL}" style="color:#1a73e8;">digest-agent</a>
+        Powered by <a href="{REPO_URL}" style="color:#1a73e8;">Digest Agent</a> - JimmyLiao
+        &nbsp;·&nbsp; ⭐ <a href="{REPO_URL}" style="color:#1a73e8;">Star on GitHub</a>
     </div>
 </body>
 </html>"""
