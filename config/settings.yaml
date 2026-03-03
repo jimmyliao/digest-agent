@@ -1,0 +1,34 @@
+sources:
+  - id: google-official
+    name: Google Official Blog
+    url: https://blog.google/feed/
+    type: rss
+    enabled: true
+    frequency_hours: 6
+    category: official
+  - id: google-cloud
+    name: Google Cloud Blog
+    url: https://cloud.google.com/blog/feed/
+    type: rss
+    enabled: true
+    frequency_hours: 12
+    category: cloud
+  - id: google-ai
+    name: Google AI Blog
+    url: https://ai.googleblog.com/feeds/posts/default
+    type: rss
+    enabled: true
+    frequency_hours: 24
+    category: ai
+
+schedule:
+  fetch: "0 6,12,18 * * *"
+  summarize: "30 6,12,18 * * *"
+  publish: "45 6,12,18 * * *"
+  timezone: "Asia/Taipei"
+
+gemini:
+  model: gemini-2.5-flash
+  max_tokens: 500
+  temperature: 0.7
+  daily_budget_usd: 5.0
