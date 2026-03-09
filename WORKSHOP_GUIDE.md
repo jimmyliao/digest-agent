@@ -198,5 +198,11 @@
    在 Telegram 搜尋 [@userinfobot](https://t.me/userinfobot)，對它輸入任何內容，它會回傳你的 `Id` (這就是 Chat ID)。
 3. **設定應用程式**：
    回到 `http://localhost:8080` 的 **[2_publish]** 頁面，點選 **[渠道設定]** -> **[Telegram]**，填入 Token 與 ID 後點擊 **[儲存到 DB]**。
-4. **測試發佈**：
+   *(或者，你也可以點擊 **[儲存到 .env]** 直接寫入檔案)*。
+
+4. **自動化填寫 (Antigravity 用戶推薦)**：
+   你也可以直接讓 Agent 幫你搞定。拿到 Key 後對 Agent 貼上：
+   > "幫我把 Telegram 的 BOT_TOKEN='你的秘鑰' 和 CHAT_ID='你的ID' 加入到 .env 檔案中，並檢查 src/publishers/telegram_publisher.py 是否已正確配置。"
+
+5. **測試發佈**：
    回到 **[Pipeline 操作]**，選取已摘要的文章點擊 **[Publish]**。 ✅
