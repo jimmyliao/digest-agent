@@ -6,7 +6,7 @@ install:
 	uv sync --all-extras
 
 dev:
-	set -a && source $(ENV_FILE) && set +a && \
+	set -a && . $(ENV_FILE) && set +a && \
 	uv run streamlit run src/app.py --server.port=8080
 
 run: dev
@@ -31,7 +31,7 @@ deploy:
 	  --set-secrets "DATABASE_URL=supabase-db-url:latest"
 
 shell:
-	set -a && source $(ENV_FILE) && set +a && \
+	set -a && . $(ENV_FILE) && set +a && \
 	uv run python -c "from src.models.database import init_db; init_db(); print('DB initialized')"
 
 clean:
@@ -40,7 +40,7 @@ clean:
 	rm -rf .pytest_cache dist .ruff_cache
 
 debug:
-	set -a && source $(ENV_FILE) && set +a && \
+	set -a && . $(ENV_FILE) && set +a && \
 	uv run python -c "\
 from src.models.database import init_db; \
 from src.orchestrator import DigestOrchestrator; \
