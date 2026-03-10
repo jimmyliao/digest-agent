@@ -41,6 +41,8 @@
   ```
 - **取得 API Key (選擇性)**：
   引導學員去 [aistudio.google.com](https://aistudio.google.com/) 申請免費的 Gemini API Key，並貼入 `.env` 中的 `GEMINI_API_KEY=`。
+- **設定 GCP Project ID (選擇性)**：
+  如果你有 GCP 專案，可以順便填入 `GOOGLE_CLOUD_PROJECT=`。這在本地開發不是必須，但當你需要使用 Vertex AI 或部署到雲端時就會用到。
 - 🚨 **TA 救援提示**：如果學員申請 API Key 卡住，請跟他們說**「沒有 API Key 也沒關係」**，專案會自動進入 **Mock Mode**，依然可以點擊看摘要（雖然是假資料），不會報錯。
 
 ### Step 3：啟動應用程式
@@ -121,7 +123,9 @@
 2. **`make dev` 執行失敗？**
    - 學員可能在 Windows 且沒有安裝 `make`。請他們直接下：`uv run streamlit run src/app.py` 即可。
 3. **API Rate Limit 報錯 (HTTP 429)？**
-   - 免費版 Gemini API 有頻率限制（15 RPM）。請學員不要一次選 10 篇文章去 Summary，**建議一次點 1~2 篇**。
+   - 免費版 Gemini API 有頻率限制。
+   - **自動降級機制 (NEW)**：專案已實作自動降級 (Fallback)，若 `gemini-2.5-flash` 額度用罄，會自動嘗試 `flash-lite` 或 `3.1-flash-lite-preview`。
+   - **建議**：請學員在 UI 上將「摘要數量上限」設為 **1~5 篇**，不要一次全選。
 4. **Agent 發瘋或寫出有 Bug 的扣？**
    - 使用 `/restore` 大法。
 5. **(進階) 學員想試玩 MCP 連接 GitHub？**
@@ -215,9 +219,10 @@
 
 ## 🛠️ 常見問題與排除 (Troubleshooting)
 
-*   **1. 程式報錯 `429 RESOURCE_EXHAUSTED`**：
-    *   **原因**：免費版 Gemini API 每分鐘限制約 15 次請求。一次摘要太多文章（如 50 篇以上）會導致超限。
-    *   **解法**：在 **[2_publish]** 頁面，使用「摘要數量上限」拉桿，建議一次設定 5-10 篇即可。
+    *   **原因**：免費版 Gemini API 每分鐘請求次數有限。
+    *   **解法**：
+        1. 專案內建 **模型自動降級 (Fallback)**，遇到 429 會自動切換模型，請稍候片刻。
+        2. 在 **[2_publish]** 頁面，將「摘要數量上限」拉桿調低（預設已設為 1，建議測試時不要調太高）。
 *   **2. Agent 找不到資料表 (Hallucinate SQLite Table)**：
     *   **原因**：Agent 可能沒讀到 `AGENTS.md` 或是工作目錄縮在子目錄。
     *   **解法**：請確保在 `digest-agent` 根目錄啟動 Agent。如果它還是亂寫 SQL，可以提醒它：「請參考 AGENTS.md 中的資料庫架構，使用 ArticleDB 資料表」。
