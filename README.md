@@ -55,7 +55,7 @@ uv run streamlit run src/app.py --server.port=8080
 Or with `make`:
 ```bash
 make install
-make dev     # loads ENV_FILE=~/workspace/.env by default
+make dev     # loads .env by default
 ```
 
 **Alternative — use with AI Agent CLI:**

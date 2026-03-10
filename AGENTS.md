@@ -58,7 +58,7 @@ DATABASE_URL=postgresql+psycopg2://...           # Cloud Run (Supabase)
 
 ### Channel Config: .env + DB dual-layer
 Priority: **DB > .env** (same in both orchestrator and UI).
-- `.env` / `~/workspace/.env` → loaded via `make dev` (`set -a && source`)
+- `.env` → loaded via `make dev` (`set -a && source`)
 - DB (`channel_configs` table) → set via "⚙️ 渠道設定" tab in UI
 - UI shows source badge per field: 🔵 DB / 🟢 .env / ⚪ 未設定
 - "🗑️ 清除 DB" button → falls back to .env
@@ -80,7 +80,7 @@ Publish updates to `published` / `failed`.
 # Install
 uv sync --all-extras
 
-# Run (loads ~/workspace/.env)
+# Run (loads local .env)
 make dev        # http://localhost:8080
 
 # Test

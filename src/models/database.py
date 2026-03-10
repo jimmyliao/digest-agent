@@ -112,9 +112,9 @@ def init_db():
     try:
         if db.query(SourceDB).count() == 0:
             defaults = [
-                SourceDB(id="google-official", name="Google Official Blog", url="https://blog.google/rss/", type="rss", enabled=True, frequency_hours=6, category="official"),
+                SourceDB(id="google-official", name="Google Official Blog", url="https://blog.google/rss/", type="rss", enabled=False, frequency_hours=6, category="official"),
                 SourceDB(id="google-cloud", name="Google Cloud Blog", url="https://cloud.google.com/feeds/gcp-release-notes.xml", type="rss", enabled=True, frequency_hours=12, category="cloud"),
-                SourceDB(id="google-research", name="Google Research Blog", url="https://blog.research.google/feeds/posts/default", type="rss", enabled=True, frequency_hours=24, category="research"),
+                SourceDB(id="google-research", name="Google Research Blog", url="https://blog.research.google/feeds/posts/default", type="rss", enabled=False, frequency_hours=24, category="research"),
             ]
             db.add_all(defaults)
             db.commit()

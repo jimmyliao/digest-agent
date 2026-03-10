@@ -62,6 +62,14 @@ class GeminiSummarizer:
     MAX_CONCURRENT = 3
     RATE_LIMIT_PER_MINUTE = int(os.environ.get("GEMINI_RATE_LIMIT_PER_MINUTE", "14"))
 
+    # Fallback model list to handle per-model rate limits
+    MODEL_FALLBACK_LIST = [
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-1.5-flash",
+    ]
+
     def __init__(self, api_key: Optional[str] = None, mock_mode: Optional[bool] = None):
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
         self.model = "gemini-2.5-flash"
@@ -156,36 +164,67 @@ class GeminiSummarizer:
         return await asyncio.gather(*tasks)
 
     async def _call_with_retry(self, client, prompt: str):
-        """Call Gemini API with exponential backoff on rate limit errors."""
+        """Call Gemini API with exponential backoff and model fallback on 429 errors."""
         from google.genai import types
         config = types.GenerateContentConfig(
             system_instruction=self.prompt_manager.SYSTEM_PROMPT,
         )
-        for attempt in range(self.MAX_RETRIES):
-            try:
-                return await client.aio.models.generate_content(
-                    model=self.model,
-                    contents=prompt,
-                    config=config,
-                )
-            except Exception as e:
-                error_str = str(e).lower()
-                is_retryable = (
-                    "429" in error_str
-                    or "rate" in error_str
-                    or "quota" in error_str
-                    or "resource_exhausted" in error_str
-                )
-                if not is_retryable or attempt == self.MAX_RETRIES - 1:
-                    raise
-                delay = self.BASE_DELAY * (2 ** attempt)
-                logger.warning(
-                    "Gemini API rate limited (attempt %d/%d), retrying in %.1fs",
-                    attempt + 1,
-                    self.MAX_RETRIES,
-                    delay,
-                )
-                await asyncio.sleep(delay)
+
+        models_to_try = self.MODEL_FALLBACK_LIST.copy()
+        # Move the currently configured model to the front if it's in the list
+        if self.model in models_to_try:
+            models_to_try.remove(self.model)
+            models_to_try.insert(0, self.model)
+        else:
+            models_to_try.insert(0, self.model)
+
+        last_exception = None
+
+        for model_name in models_to_try:
+            for attempt in range(self.MAX_RETRIES):
+                try:
+                    logger.debug("Summarizing with model: %s (attempt %d)", model_name, attempt + 1)
+                    response = await client.aio.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=config,
+                    )
+                    # Success! Update current model for next time preference
+                    self.model = model_name
+                    return response
+                except Exception as e:
+                    last_exception = e
+                    error_str = str(e).lower()
+                    is_rate_limit = (
+                        "429" in error_str
+                        or "rate" in error_str
+                        or "quota" in error_str
+                        or "resource_exhausted" in error_str
+                    )
+
+                    if not is_rate_limit:
+                        # For non-rate errors, retry the same model
+                        if attempt == self.MAX_RETRIES - 1:
+                            raise
+                    else:
+                        # For rate limit, if we have more attempts, wait. 
+                        # If we used up attempts for THIS model, we'll break and try NEXT model.
+                        if attempt < self.MAX_RETRIES - 1:
+                            delay = self.BASE_DELAY * (2 ** attempt)
+                            logger.warning(
+                                "[%s] Rate limited, retrying in %.1fs (attempt %d/%d)",
+                                model_name, delay, attempt + 1, self.MAX_RETRIES
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        else:
+                            logger.warning("[%s] Quota exhausted after retries. Trying fallback model...", model_name)
+                            break # Go to next model in outer loop
+
+        # If we reach here, all models failed
+        if last_exception:
+            raise last_exception
+        raise Exception("Failed to get response from any Gemini model")
 
     def _mock_summarize(self, title: str, content: str, language: str) -> SummaryResult:
         """Return a mock SummaryResult for testing without API key."""

@@ -1,6 +1,6 @@
 .PHONY: install dev test lint build run deploy shell clean
 
-ENV_FILE ?= ~/workspace/.env
+ENV_FILE ?= .env
 
 install:
 	uv sync --all-extras

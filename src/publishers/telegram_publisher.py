@@ -5,7 +5,7 @@ TelegramPublisher - 透過 Telegram Bot API 發送摘要
 
 import os
 import logging
-from typing import Dict
+from typing import Dict, List
 
 import aiohttp
 
