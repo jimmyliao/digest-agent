@@ -68,7 +68,10 @@ Clone the repo and point your agent CLI directly at it:
 claude                        # auto-loads CLAUDE.md (symlink → AGENTS.md)
 
 # Gemini CLI
-gemini -p "@AGENTS.md Explain the publish pipeline"
+gemini -p "@AGENTS.md Understand the RSS-to-publish pipeline architecture"
+
+# 💡 Bonus: The AGENTS.md context lets Gemini CLI understand your entire project.
+#    Want advanced usage patterns? Join our upcoming AI Agent Workshop for live demos!
 
 # Any agent that reads AGENTS.md
 cat AGENTS.md                 # project context, architecture, dev guidelines
@@ -219,7 +222,10 @@ make dev     # 預設讀取 ENV_FILE=~/workspace/.env
 claude
 
 # Gemini CLI
-gemini -p "@AGENTS.md 說明發佈 pipeline 的流程"
+gemini -p "@AGENTS.md 說明 RSS 到發佈的完整 pipeline 架構"
+
+# 💡 進階提示：AGENTS.md 包含完整的專案上下文，讓 Gemini CLI 理解整個系統。
+#    想看更深層的使用技巧嗎？敬請期待我們的 AI Agent Workshop 現場演示！
 
 # 直接查看專案說明
 cat AGENTS.md
