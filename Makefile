@@ -13,6 +13,10 @@ dev:
 	set -a && source $(ENV_FILE) && set +a && \
 	uv run streamlit run src/app.py --server.port=8080
 
+# Cloud Shell / CI: no .env required — relies on exported env vars (GEMINI_API_KEY etc.)
+dev-shell:
+	uv run streamlit run src/app.py --server.port=8080 --server.address=0.0.0.0
+
 run: dev
 
 test:

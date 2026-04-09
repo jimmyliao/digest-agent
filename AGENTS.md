@@ -141,9 +141,9 @@ echo 'export GEMINI_API_KEY=your-key-here' >> ~/.bashrc
 
 **Magic Prompt — Local run + Web Preview:**
 ```bash
-gemini -p "@GEMINI.md 我在 Google Cloud Shell 環境，依賴已安裝，.env 已有 GEMINI_API_KEY。
+gemini -p "@GEMINI.md 我在 Google Cloud Shell 環境，依賴已安裝，GEMINI_API_KEY 已 export 到 shell。
 請幫我：
-1. 在背景執行 streamlit：nohup uv run streamlit run src/app.py --server.port=8080 --server.address=0.0.0.0 &
+1. 在背景執行：nohup make dev-shell &（不需要 .env，直接吃 shell env var）
 2. 確認 port 8080 有在監聽（ss -tlnp 或 curl localhost:8080）
 3. 說明如何點 Cloud Shell 右上角的 Web Preview 選 port 8080 開啟 Dashboard"
 ```
