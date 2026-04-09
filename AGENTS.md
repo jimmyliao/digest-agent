@@ -150,16 +150,12 @@ gemini -p "@GEMINI.md 我在 Google Cloud Shell 環境，依賴已安裝，GEMIN
 
 **Magic Prompt — Deploy to Cloud Run + preview:**
 ```bash
-gemini -p "@GEMINI.md 我在 Google Cloud Shell，要部署到 Cloud Run。
-GCP_PROJECT_ID=your-project-id
-GEMINI_API_KEY=your-key-here
-
-請幫我：
-1. 執行 gcloud config set project \$GCP_PROJECT_ID
-2. 啟用必要 API：gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-3. 執行 GEMINI_API_KEY=\$GEMINI_API_KEY make deploy-workshop
+gemini -p "@GEMINI.md 我在 Google Cloud Shell，請依序幫我執行以下指令：
+1. gcloud config set project YOUR_PROJECT_ID
+2. gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+3. GEMINI_API_KEY=YOUR_GEMINI_API_KEY make deploy-workshop
 4. 部署完成後印出 Cloud Run URL
-5. 用 curl 驗證 URL 回應正常"
+5. curl 驗證 URL 有正常回應"
 ```
 
 **Required user inputs:**

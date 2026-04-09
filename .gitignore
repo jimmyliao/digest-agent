@@ -25,6 +25,10 @@ build/
 .coverage
 htmlcov/
 
+# AI tools (local settings, not for repo)
+.claude/
+.gemini/settings.local.json
+
 # macOS
 .DS_Store
 firebase-debug.log
