@@ -1,6 +1,10 @@
-.PHONY: install dev test lint build run deploy shell clean
+.PHONY: install dev test lint build run deploy deploy-workshop shell clean
 
 ENV_FILE ?= .env
+WORKSPACE_ENV ?= $(HOME)/workspace/.env
+
+# Load GEMINI_API_KEY from ~/workspace/.env if not already set
+GEMINI_API_KEY ?= $(shell grep -m1 '^GEMINI_API_KEY=' $(WORKSPACE_ENV) 2>/dev/null | cut -d= -f2-)
 
 install:
 	uv sync --all-extras
@@ -29,6 +33,45 @@ deploy:
 	  --port 8080 \
 	  --set-secrets "GEMINI_API_KEY=gemini-api-key:latest" \
 	  --set-secrets "DATABASE_URL=supabase-db-url:latest"
+
+# Dry-run: build Docker image locally + echo the gcloud command (no actual deploy)
+# Usage: GEMINI_API_KEY=xxx make deploy-dry-run
+deploy-dry-run:
+	@if [ -z "$(GEMINI_API_KEY)" ]; then \
+	  echo "❌ GEMINI_API_KEY is not set. Usage: GEMINI_API_KEY=xxx make deploy-dry-run"; \
+	  exit 1; \
+	fi
+	@echo "🔨 Building Docker image locally to validate Dockerfile..."
+	docker build -t digest-agent-workshop-test .
+	@echo ""
+	@echo "✅ Image build OK. Would run:"
+	@echo ""
+	@echo "  gcloud run deploy digest-agent-workshop \\"
+	@echo "    --source . \\"
+	@echo "    --region asia-east1 \\"
+	@echo "    --platform managed \\"
+	@echo "    --allow-unauthenticated \\"
+	@echo "    --port 8080 \\"
+	@echo "    --set-env-vars GEMINI_API_KEY=*** \\"
+	@echo "    --set-env-vars DATABASE_URL=sqlite:////tmp/digest.db"
+	@echo ""
+	@echo "👉 Run 'GEMINI_API_KEY=xxx make deploy-workshop' to actually deploy."
+
+# Workshop / quick demo: no Secret Manager needed, SQLite in container
+# Usage: GEMINI_API_KEY=xxx make deploy-workshop
+deploy-workshop:
+	@if [ -z "$(GEMINI_API_KEY)" ]; then \
+	  echo "❌ GEMINI_API_KEY is not set. Usage: GEMINI_API_KEY=xxx make deploy-workshop"; \
+	  exit 1; \
+	fi
+	gcloud run deploy digest-agent-workshop \
+	  --source . \
+	  --region asia-east1 \
+	  --platform managed \
+	  --allow-unauthenticated \
+	  --port 8080 \
+	  --set-env-vars "GEMINI_API_KEY=$(GEMINI_API_KEY)" \
+	  --set-env-vars "DATABASE_URL=sqlite:////tmp/digest.db"
 
 shell:
 	set -a && source $(ENV_FILE) && set +a && \
