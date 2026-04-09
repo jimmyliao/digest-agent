@@ -1,0 +1,45 @@
+{
+  "general": {
+    "checkpointing": {
+      "enabled": true
+    }
+  },
+
+  "hooks": {
+    "BeforeTool": [
+      {
+        "command": "bash",
+        "args": [".gemini/hooks/guard_rails.sh"],
+        "comment": "攔截對 data/ 和 app.py 的危險操作"
+      },
+      {
+        "command": "node",
+        "args": [".gemini/hooks/app-protection.js"],
+        "comment": "防止 rm/mv src/app.py"
+      }
+    ],
+    "BeforeModel": [
+      {
+        "command": "bash",
+        "args": ["scripts/sys-load.sh"],
+        "comment": "注入即時 CPU 負載到 context（跨平台：macOS + Linux/Cloud Shell）"
+      }
+    ]
+  },
+
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "comment": "GitHub MCP：讀 issue、PR、搜尋 code。需先 export GITHUB_PERSONAL_ACCESS_TOKEN"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "comment": "Filesystem MCP：讓 Gemini 以結構化方式讀寫專案檔案"
+    }
+  }
+}
