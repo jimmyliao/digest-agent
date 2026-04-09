@@ -115,6 +115,54 @@ make debug
 ### For Gemini CLI
 - Use for files > 300 lines or large codebase analysis
 - Key large files: `uv.lock` (ignore), `src/pages/2_publish.py`
+- Auto-loads this file via `GEMINI.md` symlink when you run `gemini` inside the project directory
+
+### For Gemini CLI on Google Cloud Shell
+
+**One-time setup:**
+```bash
+# 1. Install uv (Cloud Shell doesn't have it by default)
+curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
+
+# 2. Clone and install
+git clone https://github.com/jimmyliao/digest-agent.git
+cd digest-agent
+uv sync --all-extras
+
+# 3. Set your API key (only GEMINI_API_KEY is required)
+echo "GEMINI_API_KEY=your-key-here" > .env
+```
+
+**Magic Prompt — Local run + Web Preview:**
+```bash
+gemini -p "@GEMINI.md 我在 Google Cloud Shell 環境，依賴已安裝，.env 已有 GEMINI_API_KEY。
+請幫我：
+1. 在背景執行 streamlit：nohup uv run streamlit run src/app.py --server.port=8080 --server.address=0.0.0.0 &
+2. 確認 port 8080 有在監聽（ss -tlnp 或 curl localhost:8080）
+3. 說明如何點 Cloud Shell 右上角的 Web Preview 選 port 8080 開啟 Dashboard"
+```
+
+**Magic Prompt — Deploy to Cloud Run + preview:**
+```bash
+gemini -p "@GEMINI.md 我在 Google Cloud Shell，要部署到 Cloud Run。
+GCP_PROJECT_ID=your-project-id
+GEMINI_API_KEY=your-key-here
+
+請幫我：
+1. 執行 gcloud config set project \$GCP_PROJECT_ID
+2. 啟用必要 API：gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+3. 執行 GEMINI_API_KEY=\$GEMINI_API_KEY make deploy-workshop
+4. 部署完成後印出 Cloud Run URL
+5. 用 curl 驗證 URL 回應正常"
+```
+
+**Required user inputs:**
+
+| 欄位 | 必填 | 取得方式 |
+|------|------|---------|
+| `GEMINI_API_KEY` | ✅ | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| `GCP_PROJECT_ID` | Deploy 才需要 | Cloud Shell 左上角 project selector |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | 選填（建議 demo 用）| @BotFather，30 秒取得 |
 
 ### Known Issues / Notes
 - 3 retry-mock tests in `tests/test_gemini_summarizer.py` fail due to SDK API mismatch — pre-existing, not regressions

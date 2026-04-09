@@ -120,7 +120,73 @@ You can also configure channels directly in the UI under **⚙️ 渠道設定**
 
 ---
 
-## Deployment (Cloud Run)
+## Google Cloud Shell (Zero-setup)
+
+No local install needed — run entirely from your browser.
+
+### Step 1 — One-time setup
+
+```bash
+# Install uv
+curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
+
+# Clone and install
+git clone https://github.com/jimmyliao/digest-agent.git
+cd digest-agent
+uv sync --all-extras
+
+# Set your API key
+echo "GEMINI_API_KEY=your-key-here" > .env
+```
+
+Get your key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+
+### Step 2a — Local preview (Web Preview)
+
+Paste this into Gemini CLI:
+
+```bash
+gemini -p "@GEMINI.md 我在 Google Cloud Shell 環境，依賴已安裝，.env 已有 GEMINI_API_KEY。
+請幫我：
+1. 在背景執行 streamlit：nohup uv run streamlit run src/app.py --server.port=8080 --server.address=0.0.0.0 &
+2. 確認 port 8080 有在監聽（ss -tlnp 或 curl localhost:8080）
+3. 說明如何點 Cloud Shell 右上角的 Web Preview 選 port 8080 開啟 Dashboard"
+```
+
+Then click **Web Preview → Preview on port 8080** in Cloud Shell toolbar.
+
+### Step 2b — Deploy to Cloud Run
+
+```bash
+gemini -p "@GEMINI.md 我在 Google Cloud Shell，要部署到 Cloud Run。
+GCP_PROJECT_ID=your-project-id
+GEMINI_API_KEY=your-key-here
+
+請幫我：
+1. 執行 gcloud config set project \$GCP_PROJECT_ID
+2. 啟用必要 API：gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+3. 執行 GEMINI_API_KEY=\$GEMINI_API_KEY make deploy-workshop
+4. 部署完成後印出 Cloud Run URL
+5. 用 curl 驗證 URL 回應正常"
+```
+
+Or directly:
+
+```bash
+GEMINI_API_KEY=your-key make deploy-workshop
+```
+
+**Required inputs:**
+
+| Field | Required | Where to get |
+|-------|----------|-------------|
+| `GEMINI_API_KEY` | ✅ | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| `GCP_PROJECT_ID` | Deploy only | Cloud Shell project selector (top left) |
+| Telegram Bot Token + Chat ID | Optional | @BotFather — takes 30 sec, great for live demo |
+
+---
+
+## Deployment (Cloud Run — Production)
 
 ```bash
 # Requires gcloud CLI + secrets set up in Secret Manager
@@ -274,7 +340,73 @@ Streamlit App（port 8080）
 
 ---
 
-## 部署到 Cloud Run
+## Google Cloud Shell（零環境設定）
+
+不需要本機安裝，直接在瀏覽器操作。
+
+### Step 1 — 一次性設定
+
+```bash
+# 安裝 uv
+curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
+
+# Clone 並安裝依賴
+git clone https://github.com/jimmyliao/digest-agent.git
+cd digest-agent
+uv sync --all-extras
+
+# 設定 API Key
+echo "GEMINI_API_KEY=你的-key" > .env
+```
+
+Key 取得：[aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+
+### Step 2a — 本機預覽（Web Preview）
+
+貼進 Gemini CLI：
+
+```bash
+gemini -p "@GEMINI.md 我在 Google Cloud Shell 環境，依賴已安裝，.env 已有 GEMINI_API_KEY。
+請幫我：
+1. 在背景執行 streamlit：nohup uv run streamlit run src/app.py --server.port=8080 --server.address=0.0.0.0 &
+2. 確認 port 8080 有在監聽（ss -tlnp 或 curl localhost:8080）
+3. 說明如何點 Cloud Shell 右上角的 Web Preview 選 port 8080 開啟 Dashboard"
+```
+
+完成後點 Cloud Shell 工具列的 **Web Preview → 在通訊埠 8080 上預覽**。
+
+### Step 2b — 部署到 Cloud Run
+
+```bash
+gemini -p "@GEMINI.md 我在 Google Cloud Shell，要部署到 Cloud Run。
+GCP_PROJECT_ID=你的-project-id
+GEMINI_API_KEY=你的-key
+
+請幫我：
+1. 執行 gcloud config set project \$GCP_PROJECT_ID
+2. 啟用必要 API：gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+3. 執行 GEMINI_API_KEY=\$GEMINI_API_KEY make deploy-workshop
+4. 部署完成後印出 Cloud Run URL
+5. 用 curl 驗證 URL 回應正常"
+```
+
+或直接執行：
+
+```bash
+GEMINI_API_KEY=你的-key make deploy-workshop
+```
+
+**必填欄位：**
+
+| 欄位 | 必填 | 取得方式 |
+|------|------|---------|
+| `GEMINI_API_KEY` | ✅ | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| `GCP_PROJECT_ID` | 部署才需要 | Cloud Shell 左上角 project selector |
+| Telegram Bot Token + Chat ID | 選填 | @BotFather，30 秒取得，live demo 效果很好 |
+
+---
+
+## 部署到 Cloud Run（正式環境）
 
 ```bash
 # 需要 gcloud CLI 且 Secret Manager 已設定好 secrets
