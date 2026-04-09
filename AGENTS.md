@@ -129,8 +129,14 @@ git clone https://github.com/jimmyliao/digest-agent.git
 cd digest-agent
 uv sync --all-extras
 
-# 3. Set your API key (only GEMINI_API_KEY is required)
-echo "GEMINI_API_KEY=your-key-here" > .env
+# 3. Authenticate Gemini CLI (Google OAuth — no API key needed for the CLI itself)
+gemini auth login
+
+# 4. Get a free API key for the app at https://aistudio.google.com/app/apikey
+#    The app needs GEMINI_API_KEY separately from the CLI auth.
+#    Tip: export to ~/.bashrc so Cloud Shell remembers it across sessions:
+export GEMINI_API_KEY=your-key-here
+echo 'export GEMINI_API_KEY=your-key-here' >> ~/.bashrc
 ```
 
 **Magic Prompt — Local run + Web Preview:**

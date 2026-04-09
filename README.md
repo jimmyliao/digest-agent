@@ -134,12 +134,31 @@ curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
 git clone https://github.com/jimmyliao/digest-agent.git
 cd digest-agent
 uv sync --all-extras
-
-# Set your API key
-echo "GEMINI_API_KEY=your-key-here" > .env
 ```
 
-Get your key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+**Authentication — two separate things:**
+
+| | What for | How |
+|--|----------|-----|
+| **Gemini CLI itself** | AI assistant that runs your commands | `gemini auth login` (Google OAuth, no API key needed) |
+| **digest-agent app** | Calls Gemini API to summarize news | Needs `GEMINI_API_KEY` in `.env` or shell env |
+
+```bash
+# 1. Authenticate Gemini CLI (Google account, no API key)
+gemini auth login
+
+# 2. Get a free API key for the app → https://aistudio.google.com/app/apikey
+#    Then set it — pick ONE of:
+
+# Option A: write to .env (local to project)
+echo "GEMINI_API_KEY=your-key-here" > .env
+
+# Option B: export to shell (Cloud Shell persists this across sessions if added to ~/.bashrc)
+export GEMINI_API_KEY=your-key-here
+echo 'export GEMINI_API_KEY=your-key-here' >> ~/.bashrc
+```
+
+> **Workshop tip:** If `GEMINI_API_KEY` is already exported in your shell, the app picks it up automatically — no `.env` editing needed.
 
 ### Step 2a — Local preview (Web Preview)
 
@@ -354,12 +373,31 @@ curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
 git clone https://github.com/jimmyliao/digest-agent.git
 cd digest-agent
 uv sync --all-extras
-
-# 設定 API Key
-echo "GEMINI_API_KEY=你的-key" > .env
 ```
 
-Key 取得：[aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+**認證 — 兩件獨立的事：**
+
+| | 用途 | 方式 |
+|--|------|------|
+| **Gemini CLI 本身** | AI assistant（幫你執行指令） | `gemini auth login`（Google 帳號 OAuth，不需要 API Key）|
+| **digest-agent 應用程式** | 呼叫 Gemini API 摘要新聞 | 需要 `GEMINI_API_KEY` 在 `.env` 或 shell 環境變數 |
+
+```bash
+# 1. Gemini CLI 登入（用 Google 帳號，不需要 API Key）
+gemini auth login
+
+# 2. 取得免費 API Key 給 app 用 → https://aistudio.google.com/app/apikey
+#    擇一設定：
+
+# 方式 A：寫入 .env（只對這個專案有效）
+echo "GEMINI_API_KEY=你的-key" > .env
+
+# 方式 B：export 到 shell（加入 ~/.bashrc 後 Cloud Shell 跨 session 都有效）
+export GEMINI_API_KEY=你的-key
+echo 'export GEMINI_API_KEY=你的-key' >> ~/.bashrc
+```
+
+> **工作坊提示：** 如果 shell 已有 `GEMINI_API_KEY` 環境變數，app 會自動讀取，不需要編輯 `.env`。
 
 ### Step 2a — 本機預覽（Web Preview）
 
