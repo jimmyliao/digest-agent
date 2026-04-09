@@ -29,12 +29,8 @@
 
   "mcpServers": {
     "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      },
-      "comment": "GitHub MCP：讀 issue、PR、搜尋 code。需先 export GITHUB_PERSONAL_ACCESS_TOKEN"
+      "url": "https://gitmcp.io/jimmyliao/digest-agent",
+      "comment": "GitMCP：無需 token，直接讀 digest-agent public repo 的 issue、code、docs"
     },
     "filesystem": {
       "command": "npx",
