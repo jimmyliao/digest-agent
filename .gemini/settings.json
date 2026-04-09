@@ -40,6 +40,11 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
       "comment": "Filesystem MCP：讓 Gemini 以結構化方式讀寫專案檔案"
+    },
+    "cloudrun": {
+      "command": "npx",
+      "args": ["-y", "@google/mcp-cloudrun"],
+      "comment": "Cloud Run MCP：讓 Gemini 直接管理和部署 Google Cloud Run 服務（需先 gcloud auth login）"
     }
   }
 }
