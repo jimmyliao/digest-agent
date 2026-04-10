@@ -14,8 +14,11 @@ dev:
 	uv run streamlit run src/app.py --server.port=8080
 
 # Cloud Shell / CI: no .env required — relies on exported env vars (GEMINI_API_KEY etc.)
+# Flags required for Cloud Shell Web Preview proxy (WebSocket + XSRF)
 dev-shell:
-	uv run streamlit run src/app.py --server.port=8080 --server.address=0.0.0.0
+	mkdir -p data
+	uv run streamlit run src/app.py --server.port=8080 --server.address=0.0.0.0 \
+		--server.enableCORS=false --server.enableXsrfProtection=false
 
 run: dev
 

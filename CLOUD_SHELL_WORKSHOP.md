@@ -116,6 +116,8 @@ URL：<URL>
 |------|---------|
 | `gemini --version` 噴 `node: No such file or directory` | Cloud Shell nvm 未初始化，點右上角 ⋮ → 重新啟動；或執行 `export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"` |
 | `uv` 裝完找不到 | `source ~/.bashrc` |
+| Web Preview 空白或 WebSocket 錯誤 | 已在 `make dev-shell` 內含 `--server.enableCORS=false --server.enableXsrfProtection=false`，確認用 `make dev-shell` 而非 `make dev` |
+| `OperationalError: unable to open database` | `data/` 目錄不存在，已在 `make dev-shell` 內含 `mkdir -p data`；或手動執行 `mkdir -p data` |
 | port 8080 沒回應 | `tail -20 /tmp/streamlit.log` 看錯誤 |
 | Cloud Run deploy 失敗 | 確認 billing 啟用：`gcloud beta billing projects describe <project-id>` |
 | Cloud Run URL 第一次開很慢 | Cold start 正常，等 10 秒後重整 |
