@@ -10,7 +10,7 @@
 
 ```
 @CLOUD_SHELL_WORKSHOP.md 我剛開啟 Google Cloud Shell，請帶我完成 Phase 1：
-安裝 uv、clone digest-agent、設定 GEMINI_API_KEY、啟動 Streamlit、開 Web Preview 看到 Dashboard。
+安裝 uv、clone https://github.com/jimmyliao/digest-agent、設定 GEMINI_API_KEY、啟動 Streamlit、開 Web Preview 看到 Dashboard。
 ```
 
 **預期結果：**
