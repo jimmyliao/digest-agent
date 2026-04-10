@@ -13,6 +13,12 @@
 安裝 uv、clone digest-agent、設定 GEMINI_API_KEY、啟動 Streamlit、開 Web Preview 看到 Dashboard。
 ```
 
+**預期結果：**
+- Gemini 會詢問你的 `GEMINI_API_KEY`（沒有也可以跳過進 Mock 模式）
+- 最後看到 `200` 回應，Gemini 提示你點 **Web Preview → port 8080**
+- 瀏覽器新分頁出現 Digest Agent Dashboard
+- 可以 Fetch 新聞、Summarize 看 Gemini 摘要
+
 ---
 
 ## ✨ Phase 2 Magic Prompt（選做）
@@ -23,6 +29,11 @@
 取得 BotFather token、取得 Chat ID、在 Dashboard 填入設定。
 ```
 
+**預期結果：**
+- Gemini 引導你開 Telegram → @BotFather 取得 token
+- 再開 @userinfobot 取得 Chat ID
+- 填入 Dashboard ⚙️ 渠道設定後，Publish 一篇文章，Telegram 收到推送訊息
+
 ---
 
 ## ✨ Phase 3 Magic Prompt
@@ -32,6 +43,12 @@
 @CLOUD_SHELL_WORKSHOP.md 請帶我把 digest-agent 部署到 Cloud Run。
 我的 GCP Project ID 是：（填入你的 Project ID）
 ```
+
+**預期結果：**
+- Gemini 啟用必要 GCP API、執行 `make deploy-workshop`
+- Cloud Build 打包約 3-5 分鐘
+- 拿到一個 `https://digest-agent-workshop-xxxx.asia-east1.run.app` 公開 URL
+- 任何人用瀏覽器打開都能看到 Dashboard，不需要 Cloud Shell
 
 ---
 
