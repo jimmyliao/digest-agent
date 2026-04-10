@@ -145,3 +145,4 @@ URL：<URL>
 | Cloud Run URL 第一次開很慢 | Cold start 正常，等 10 秒後重整 |
 | Gemini API 429 | 摘要數量調低（UI 上的 slider） |
 | 學員沒有 API Key | Mock 模式，告知摘要是假的但流程完整 |
+| 環境完全壞掉，restart 也沒用（最後手段）| `sudo rm -rf $HOME` → 點 ⋮ → 重新啟動。Cloud Shell 偵測到家目錄消失會完整重建環境。**注意：$HOME 所有檔案會消失，workshop 剛開始用這招最安全。** |
