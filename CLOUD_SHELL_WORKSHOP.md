@@ -26,6 +26,13 @@
 
 收到 key（或學員說沒有也可以，進 Mock 模式）後，依序執行：
 
+### 步驟 0 — 確認 Gemini CLI 可用
+```bash
+gemini --version
+```
+- ✅ 有版本號 → 繼續
+- ❌ 噴 `node: No such file or directory` → 告訴學員：「點右上角 ⋮ → 重新啟動，等環境重新載入後再試一次。」
+
 ### 步驟 1 — 安裝 uv
 ```bash
 curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
@@ -67,7 +74,22 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
 
 試試：左側點 🚀 發佈控制 → Fetch 抓新聞 → 勾選文章 → Summarize 看摘要。」
 
-等學員確認看到 Dashboard 後說：
+等學員確認看到 Dashboard 後，引導他們試用：
+「試試：左側點 🚀 發佈控制 → Fetch 抓新聞 → 勾選文章 → Summarize 看摘要。」
+
+### 步驟 6 — 示範 Gemini CLI 加持（Bonus）
+回到 Cloud Shell terminal，進 interactive mode：
+```bash
+cd ~/digest-agent
+gemini
+```
+在 interactive mode 內輸入：
+```
+@CLOUD_SHELL_WORKSHOP.md 我已完成第一段，Dashboard 在 port 8080 跑起來了。請帶我繼續部署到 Cloud Run。
+```
+告訴學員：「這個 prompt 會讓 Gemini 讀懂整個專案的 context，然後一步一步帶你走完部署流程。」
+
+說：
 「✅ 第一段完成！新聞小幫手在 Cloud Shell 跑起來了。準備好了告訴我，我們繼續部署到雲端。」
 
 ---
