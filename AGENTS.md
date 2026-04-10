@@ -121,6 +121,10 @@ make debug
 
 **One-time setup:**
 ```bash
+# 0. Verify Gemini CLI is available (Cloud Shell has it pre-installed, no npm needed)
+#    If you see "node: No such file or directory", restart the Cloud Shell VM via ⋮ → Restart
+gemini --version
+
 # 1. Install uv (Cloud Shell doesn't have it by default)
 curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
 

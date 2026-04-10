@@ -124,6 +124,16 @@ You can also configure channels directly in the UI under **⚙️ 渠道設定**
 
 No local install needed — run entirely from your browser.
 
+### Step 0 — Verify Gemini CLI
+
+Cloud Shell has `gemini` **pre-installed** — no `npm install` needed.
+
+```bash
+gemini --version
+```
+
+If you see `/usr/bin/env: 'node': No such file or directory`, click **⋮ → Restart** in the Cloud Shell toolbar and try again.
+
 ### Step 1 — One-time setup
 
 ```bash
@@ -358,6 +368,16 @@ Streamlit App（port 8080）
 ## Google Cloud Shell（零環境設定）
 
 不需要本機安裝，直接在瀏覽器操作。
+
+### Step 0 — 確認 Gemini CLI 可用
+
+Cloud Shell **預裝了 `gemini`**，不需要 npm install。
+
+```bash
+gemini --version
+```
+
+若看到 `node: No such file or directory`，點工具列 **⋮ → 重新啟動**，重開後再試。
 
 ### Step 1 — 一次性設定
 
