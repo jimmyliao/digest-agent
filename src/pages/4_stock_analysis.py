@@ -5,10 +5,21 @@
 """
 
 import asyncio
+from dataclasses import dataclass, field
 
 import streamlit as st
 
 st.set_page_config(page_title="📈 個股分析", page_icon="📈", layout="wide")
+
+
+@dataclass
+class AgentEvent:
+    """單一 agent event 的摘要。"""
+
+    agent: str = ""
+    text: str = ""
+    tool_calls: list = field(default_factory=list)
+    tool_results: list = field(default_factory=list)
 
 
 # --- ADK Runner setup ---
@@ -27,8 +38,8 @@ def get_runner():
     )
 
 
-async def run_analysis(runner, user_id: str, query: str) -> str:
-    """Run the stock analysis pipeline and collect agent responses."""
+async def run_analysis(runner, user_id: str, query: str) -> tuple[str, list[AgentEvent]]:
+    """Run the stock analysis pipeline and collect agent responses + debug info."""
     session = await runner.session_service.create_session(
         app_name="stock_analysis", user_id=user_id
     )
@@ -40,15 +51,41 @@ async def run_analysis(runner, user_id: str, query: str) -> str:
     )
 
     full_response = []
+    events_log: list[AgentEvent] = []
+
     async for event in runner.run_async(
         user_id=user_id, session_id=session.id, new_message=content
     ):
+        evt = AgentEvent(agent=getattr(event, "author", "") or "unknown")
+
+        # Collect text content
         if event.content and event.content.parts:
             for part in event.content.parts:
                 if part.text:
                     full_response.append(part.text)
+                    evt.text = part.text[:500]
+                # Collect function calls
+                if hasattr(part, "function_call") and part.function_call:
+                    fc = part.function_call
+                    evt.tool_calls.append({
+                        "tool": fc.name,
+                        "args": dict(fc.args) if fc.args else {},
+                    })
+                # Collect function responses
+                if hasattr(part, "function_response") and part.function_response:
+                    fr = part.function_response
+                    response_data = dict(fr.response) if fr.response else {}
+                    # Truncate large responses
+                    summary = str(response_data)[:300]
+                    evt.tool_results.append({
+                        "tool": fr.name,
+                        "summary": summary,
+                    })
 
-    return "\n".join(full_response)
+        if evt.text or evt.tool_calls or evt.tool_results:
+            events_log.append(evt)
+
+    return "\n".join(full_response), events_log
 
 
 # --- UI ---
@@ -95,19 +132,61 @@ if run_button and query:
 
         try:
             runner = get_runner()
-            result = asyncio.run(run_analysis(runner, "streamlit_user", query))
+            result, events_log = asyncio.run(
+                run_analysis(runner, "streamlit_user", query)
+            )
             status.update(label="✅ 分析完成", state="complete")
         except Exception as e:
             status.update(label="❌ 分析失敗", state="error")
             st.error(f"錯誤：{e}")
             result = None
+            events_log = []
 
     if result:
         st.markdown("---")
         st.markdown(result)
 
-        # Export options
+        # Debug expander — Agent 協作細節
         st.markdown("---")
+        with st.expander("🔍 Agent 協作細節（DevTools）", expanded=False):
+            st.caption("每個 agent 的回應與 tool 呼叫紀錄，等同 adk web 的 Events 面板")
+
+            for i, evt in enumerate(events_log):
+                agent_icon = {
+                    "news_collector": "📰",
+                    "industry_analyst": "🏭",
+                    "market_analyst": "📊",
+                    "stock_orchestrator": "📋",
+                }.get(evt.agent, "🤖")
+
+                st.markdown(f"**#{i+1} {agent_icon} {evt.agent}**")
+
+                # Tool calls
+                if evt.tool_calls:
+                    for tc in evt.tool_calls:
+                        st.code(
+                            f"🔧 Tool: {tc['tool']}\n"
+                            f"   Args: {tc['args']}",
+                            language="text",
+                        )
+
+                # Tool results
+                if evt.tool_results:
+                    for tr in evt.tool_results:
+                        st.code(
+                            f"✅ Result: {tr['tool']}\n"
+                            f"   {tr['summary']}",
+                            language="text",
+                        )
+
+                # Text (truncated)
+                if evt.text:
+                    preview = evt.text[:200] + "..." if len(evt.text) > 200 else evt.text
+                    st.markdown(f"> {preview}")
+
+                st.markdown("---")
+
+        # Export options
         col_a, col_b = st.columns(2)
         with col_a:
             st.download_button(
