@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "vitest run",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "next": "^15.0.0",
@@ -14,13 +16,13 @@
     "ai": "^4.0.0",
     "@ai-sdk/google": "^1.0.0",
     "@ai-sdk/anthropic": "^1.0.0",
-    "better-sqlite3": "^9.0.0",
+    "rss-parser": "^3.13.0",
     "@leapcore/iface": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
-    "@types/better-sqlite3": "^7.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }
