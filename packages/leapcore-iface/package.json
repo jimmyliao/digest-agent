@@ -1,0 +1,7 @@
+{
+  "name": "@leapcore/iface",
+  "version": "0.1.0",
+  "description": "Framework-agnostic TypeScript interfaces for AI agents (ADK, Claude Agent SDK, Semantic Kernel)",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
