@@ -14,7 +14,7 @@
 2. git clone https://github.com/jimmyliao/digest-agent.git && cd digest-agent
 3. uv sync --all-extras
 4. 問我要 GEMINI_API_KEY（從 https://aistudio.google.com/app/apikey 取得，沒有可跳過）
-5. export GEMINI_API_KEY=我提供的key && echo 'export GEMINI_API_KEY='$GEMINI_API_KEY >> ~/.bashrc
+5. export GEMINI_API_KEY=我提供的key && export GOOGLE_API_KEY=$GEMINI_API_KEY && echo -e 'export GEMINI_API_KEY='$GEMINI_API_KEY'\nexport GOOGLE_API_KEY='$GEMINI_API_KEY >> ~/.bashrc
 6. nohup make dev-shell > /tmp/streamlit.log 2>&1 &
 7. sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
 8. 看到 200 後，告訴我點 Cloud Shell 右上角 Web Preview → port 8080

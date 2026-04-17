@@ -5,9 +5,14 @@
 """
 
 import asyncio
+import os
 from dataclasses import dataclass, field
 
 import streamlit as st
+
+# ADK 需要 GOOGLE_API_KEY，自動從 GEMINI_API_KEY fallback
+if not os.environ.get("GOOGLE_API_KEY") and os.environ.get("GEMINI_API_KEY"):
+    os.environ["GOOGLE_API_KEY"] = os.environ["GEMINI_API_KEY"]
 
 st.set_page_config(page_title="📈 個股分析", page_icon="📈", layout="wide")
 
