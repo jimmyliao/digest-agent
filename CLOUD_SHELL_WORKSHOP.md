@@ -52,6 +52,46 @@
 
 ---
 
+## ✨ Phase 4 Magic Prompt（進階加碼）
+> ADK Multi-Agent 個股分析 — 體驗 agent 協作
+
+```
+@CLOUD_SHELL_WORKSHOP.md Phase 1-3 完成了。請帶我體驗 Phase 4：ADK Multi-Agent 個股分析。
+我想看看多個 AI agent 如何協作分析一支股票。
+```
+
+**預期結果：**
+- 切換到 `feature/adk-stock-analysis` branch
+- `make adk-web` 啟動 ADK Web UI（port 8000）
+- Web Preview port 8000 看到 ADK 測試介面
+- 輸入「分析台積電」→ 4 個 agent 協作：新聞 × 產業 × 市場 × 整合
+- 可修改 agent instruction 體驗客製化
+
+### 學習重點
+
+**ADK 核心概念（5 min）：**
+- Agent = LLM + instruction + tools（像一位有專長的分析師）
+- Sub-agents = 專業分工（新聞、產業、市場各有專家）
+- Runner = 執行環境（管理 agent 之間的溝通）
+
+**ADK Memory 三層架構（3 min）：**
+```
+1. temp: state     → 工具呼叫間暫存（agent 內部用）
+2. session state   → 本次對話的便利貼（agent 間共享 output_key）
+3. MemoryService   → 跨對話的知識庫（長期學習）
+```
+
+**Demo 體驗（5 min）：**
+- 第一次問「分析台積電」→ agent 從零開始蒐集
+- 第二次問「台積電最近有什麼變化？」→ 回憶上次分析，只查差異
+
+**動手改（5 min）：**
+- 打開 `agents/stock/industry_agent.py`
+- 修改 instruction 加入「特別關注 AI 晶片需求」
+- 重啟 `make adk-web` 看分析結果的變化
+
+---
+
 ---
 
 ## Appendix：給 Gemini CLI 的執行腳本
@@ -149,6 +189,52 @@ gcloud run services describe digest-agent-workshop --region asia-east1 --format 
 
 ---
 
+### Phase 4 執行細節（ADK Multi-Agent）
+
+告訴學員：「接下來體驗進階功能：多個 AI agent 協作分析股票。」
+
+**步驟 1 — 切換 branch**
+```bash
+git fetch origin
+git checkout feature/adk-stock-analysis
+uv sync
+```
+
+**步驟 2 — 啟動 ADK Web UI**
+```bash
+nohup make adk-web > /tmp/adk.log 2>&1 &
+sleep 3 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8000
+```
+看到 `200` → 告訴學員：「點 Web Preview → port 8000」
+
+**步驟 3 — 體驗 agent 協作**
+
+告訴學員：
+1. 在 ADK Web UI 左側選 `stock_orchestrator`
+2. 輸入「分析 2330 台積電」
+3. 觀察右側：4 個 agent 的 thinking + tool 呼叫過程
+4. 最終整合報告包含：新聞面、產業面、市場面、綜合評估
+
+**步驟 4 — 解說 Memory（口頭 + 螢幕展示）**
+
+講師展示：
+- 第一次查詢 → agent 完整分析（~15 秒）
+- 同 session 第二次問「台積電 vs 聯發科？」→ 延續上下文
+- 說明：session state 保留了 output_key 結果，orchestrator 能參考
+
+**步驟 5 — 動手修改 agent（選做）**
+
+告訴學員：
+```bash
+# 用 Gemini CLI 修改 agent
+gemini -p "打開 agents/stock/industry_agent.py，在 instruction 裡加上『特別關注 AI 晶片供應鏈和 CoWoS 先進封裝產能』"
+```
+重啟 `make adk-web`，再次分析台積電，看差異。
+
+完成後：「🎉 恭喜完成所有 Phase！你已經體驗了從 RSS 摘要到 Multi-Agent 分析的完整 AI pipeline。」
+
+---
+
 ### 常見狀況
 
 | 狀況 | 處理方式 |
@@ -164,3 +250,7 @@ gcloud run services describe digest-agent-workshop --region asia-east1 --format 
 | Gemini API 429 | 摘要數量調低（UI slider） |
 | 沒有 API Key | Mock 模式，摘要是假的但流程完整 |
 | 環境完全壞掉（最後手段） | `sudo rm -rf $HOME` → 點 ⋮ → 重新啟動（**$HOME 全刪**） |
+| ADK Web UI port 8000 不通 | `tail -20 /tmp/adk.log`，確認 `adk web` 啟動成功 |
+| `google_search` tool 失敗 | 確認有 `GEMINI_API_KEY`，Google Search grounding 需要有效 key |
+| Agent 回應很慢 | 正常，4 個 agent 串聯約 15-30 秒 |
+| `ModuleNotFoundError: agents` | 確認在 `digest-agent/` 目錄下執行 |

@@ -9,6 +9,7 @@ authors = [
 dependencies = [
     "streamlit>=1.35.0",
     "google-genai>=1.0.0",
+    "google-adk>=1.0.0",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
     "feedparser>=6.0.0",
@@ -20,6 +21,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# leapcore = [
+#     "leapcore @ git+ssh://git@github.com/jimmyliao/leapcore.git",
+# ]  # uncomment when jimmyliao/leapcore repo exists
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
@@ -31,7 +35,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["src", "agents", "leapcore_iface"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

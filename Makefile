@@ -1,4 +1,4 @@
-.PHONY: install dev test lint build run deploy deploy-workshop shell clean
+.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run
 
 ENV_FILE ?= .env
 WORKSPACE_ENV ?= $(HOME)/workspace/.env
@@ -79,6 +79,14 @@ deploy-workshop:
 	  --port 8080 \
 	  --set-env-vars "GEMINI_API_KEY=$(GEMINI_API_KEY)" \
 	  --set-env-vars "DATABASE_URL=sqlite:////tmp/digest.db"
+
+# ADK: launch web UI to test stock analysis agents interactively
+adk-web:
+	uv run adk web agents/stock
+
+# ADK: run stock agent in CLI mode
+adk-run:
+	uv run adk run agents/stock
 
 shell:
 	set -a && source $(ENV_FILE) && set +a && \
