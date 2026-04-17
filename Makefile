@@ -82,7 +82,7 @@ deploy-workshop:
 
 # ADK: launch web UI to test stock analysis agents interactively
 adk-web:
-	uv run adk web agents/stock
+	uv run adk web agents
 
 # ADK: run stock agent in CLI mode
 adk-run:
