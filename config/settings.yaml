@@ -21,6 +21,29 @@ sources:
     frequency_hours: 24
     category: ai
 
+  # 台股財經 — Phase 4 個股分析 news_collector 也會讀取這些來源
+  - id: yahoo-tw-stock
+    name: Yahoo 台灣股市
+    url: https://tw.stock.yahoo.com/rss
+    type: rss
+    enabled: true
+    frequency_hours: 6
+    category: finance_tw
+  - id: twse-news
+    name: TWSE 台灣證交所
+    url: https://www.twse.com.tw/rwd/zh/news/feed?type=rss
+    type: rss
+    enabled: true
+    frequency_hours: 6
+    category: finance_tw
+  - id: technews-finance
+    name: TechNews 科技新報
+    url: https://technews.tw/feed/
+    type: rss
+    enabled: true
+    frequency_hours: 12
+    category: finance_tw
+
 schedule:
   fetch: "0 6,12,18 * * *"
   summarize: "30 6,12,18 * * *"

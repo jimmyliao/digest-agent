@@ -112,9 +112,14 @@ def init_db():
     try:
         if db.query(SourceDB).count() == 0:
             defaults = [
+                # Google 技術 Blog
                 SourceDB(id="google-official", name="Google Official Blog", url="https://blog.google/rss/", type="rss", enabled=False, frequency_hours=6, category="official"),
                 SourceDB(id="google-cloud", name="Google Cloud Blog", url="https://cloud.google.com/feeds/gcp-release-notes.xml", type="rss", enabled=True, frequency_hours=12, category="cloud"),
                 SourceDB(id="google-research", name="Google Research Blog", url="https://blog.research.google/feeds/posts/default", type="rss", enabled=False, frequency_hours=24, category="research"),
+                # 台股財經 — Phase 4 個股分析 news_collector 共用
+                SourceDB(id="yahoo-tw-stock", name="Yahoo 台灣股市", url="https://tw.stock.yahoo.com/rss", type="rss", enabled=True, frequency_hours=6, category="finance_tw"),
+                SourceDB(id="twse-news", name="TWSE 台灣證交所", url="https://www.twse.com.tw/rwd/zh/news/feed?type=rss", type="rss", enabled=True, frequency_hours=6, category="finance_tw"),
+                SourceDB(id="technews-finance", name="TechNews 科技新報", url="https://technews.tw/feed/", type="rss", enabled=True, frequency_hours=12, category="finance_tw"),
             ]
             db.add_all(defaults)
             db.commit()
