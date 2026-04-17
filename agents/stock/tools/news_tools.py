@@ -1,11 +1,35 @@
-"""新聞搜尋工具 — 包裝現有 RSSFetcher 提供個股新聞查詢。"""
+"""新聞搜尋工具 — 包裝現有 RSSFetcher 提供個股新聞查詢。
+
+RSS 來源統一由 config/settings.yaml 管理（category: finance_tw），
+Phase 1-3 Fetch 和 Phase 4 個股分析共用同一組財經來源。
+"""
 
 import asyncio
+from pathlib import Path
 from typing import Optional
 
+import yaml
 
-# 預設台股財經 RSS 來源
-DEFAULT_FINANCE_SOURCES = [
+
+def _load_finance_sources() -> list[dict]:
+    """從 config/settings.yaml 讀取 category=finance_tw 的 RSS 來源。"""
+    settings_path = Path(__file__).resolve().parents[3] / "config" / "settings.yaml"
+    if not settings_path.exists():
+        return _FALLBACK_SOURCES
+
+    with open(settings_path) as f:
+        cfg = yaml.safe_load(f)
+
+    sources = [
+        {"id": s["id"], "url": s["url"], "enabled": s.get("enabled", True)}
+        for s in cfg.get("sources", [])
+        if s.get("category") == "finance_tw" and s.get("enabled", True)
+    ]
+    return sources if sources else _FALLBACK_SOURCES
+
+
+# settings.yaml 讀不到時的 fallback
+_FALLBACK_SOURCES = [
     {
         "id": "moneyudn",
         "url": "https://money.udn.com/rssfeed/news/1001/5710?ch=money",
@@ -40,7 +64,7 @@ def search_company_news(company_name: str, ticker: str = "") -> dict:
 
     try:
         result = asyncio.run(
-            fetcher.fetch_all(DEFAULT_FINANCE_SOURCES, force_refresh=True)
+            fetcher.fetch_all(_load_finance_sources(), force_refresh=True)
         )
     except Exception as e:
         return {
@@ -94,7 +118,7 @@ def fetch_financial_news_feeds(max_articles: int = 20) -> dict:
 
     try:
         result = asyncio.run(
-            fetcher.fetch_all(DEFAULT_FINANCE_SOURCES, force_refresh=True)
+            fetcher.fetch_all(_load_finance_sources(), force_refresh=True)
         )
     except Exception as e:
         return {

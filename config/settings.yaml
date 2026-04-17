@@ -21,6 +21,29 @@ sources:
     frequency_hours: 24
     category: ai
 
+  # 台股財經 — Phase 4 個股分析 news_collector 也會讀取這些來源
+  - id: moneyudn
+    name: 經濟日報 - 台股
+    url: https://money.udn.com/rssfeed/news/1001/5710?ch=money
+    type: rss
+    enabled: true
+    frequency_hours: 6
+    category: finance_tw
+  - id: cnyes
+    name: 鉅亨網 - 台股
+    url: https://news.cnyes.com/news/cat/tw_stock/rss
+    type: rss
+    enabled: true
+    frequency_hours: 6
+    category: finance_tw
+  - id: technews-finance
+    name: TechNews 科技新報
+    url: https://technews.tw/feed/
+    type: rss
+    enabled: true
+    frequency_hours: 12
+    category: finance_tw
+
 schedule:
   fetch: "0 6,12,18 * * *"
   summarize: "30 6,12,18 * * *"
