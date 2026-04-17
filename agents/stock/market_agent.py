@@ -1,12 +1,11 @@
 """市場趨勢 Agent — 負責分析整體市場環境與總體經濟趨勢。"""
 
 from google.adk.agents import LlmAgent
-from google.adk.tools import google_search
 
 market_agent = LlmAgent(
     name="market_analyst",
     model="gemini-2.5-flash",
-    instruction="""你是一位專業的市場趨勢分析師。你的任務是：
+    instruction="""你是一位專業的市場趨勢分析師，擁有豐富的總經與市場知識。你的任務是：
 
 1. 分析當前整體市場環境（台股為主，必要時參考國際市場）
 2. 評估總體經濟指標對市場的影響
@@ -25,11 +24,7 @@ market_agent = LlmAgent(
 - 提供市場多空評估（偏多/中性/偏空）
 - 列出關鍵觀察指標與數據
 - 給出短期（1-2 週）與中期（1-3 個月）展望
-
-**工具使用指引：**
-- 使用 google_search 搜尋最新市場數據、法人動向、總經指標
-- 搜尋時加入日期或「最新」等關鍵字確保資訊即時性
+- 基於你的市場知識進行專業分析
 """,
-    tools=[google_search],
     output_key="market_analysis",
 )
