@@ -229,6 +229,9 @@ git fetch origin
 git checkout feature/adk-stock-analysis
 uv sync
 
+# ADK 需要 GOOGLE_API_KEY（不是 GEMINI_API_KEY）
+export GOOGLE_API_KEY=$GEMINI_API_KEY
+
 # 重啟 Streamlit
 nohup make dev-shell > /tmp/streamlit.log 2>&1 &
 sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
