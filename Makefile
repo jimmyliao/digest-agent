@@ -13,10 +13,11 @@ dev:
 	set -a && source $(ENV_FILE) && set +a && \
 	uv run streamlit run src/app.py --server.port=8080
 
-# Cloud Shell / CI: no .env required — relies on exported env vars (GEMINI_API_KEY etc.)
+# Cloud Shell / CI: reads .env if present, falls back to shell env vars
 # Flags required for Cloud Shell Web Preview proxy (WebSocket + XSRF)
 dev-shell:
 	mkdir -p data
+	if [ -f .env ]; then set -a && . .env && set +a; fi && \
 	uv run streamlit run src/app.py --server.port=8080 --server.address=0.0.0.0 \
 		--server.enableCORS=false --server.enableXsrfProtection=false
 

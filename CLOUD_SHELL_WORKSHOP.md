@@ -9,16 +9,16 @@
 > 安裝環境 + Clone + 啟動 Streamlit + Web Preview
 
 ```
-請幫我依序執行：
+請幫我依序執行（每步確認成功再繼續，用繁體中文回覆）：
 1. curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
 2. git clone https://github.com/jimmyliao/digest-agent.git && cd digest-agent
 3. uv sync --all-extras
-4. 問我要 GEMINI_API_KEY（從 https://aistudio.google.com/app/apikey 取得，沒有可跳過）
-5. export GEMINI_API_KEY=我提供的key && export GOOGLE_API_KEY=$GEMINI_API_KEY && echo -e 'export GEMINI_API_KEY='$GEMINI_API_KEY'\nexport GOOGLE_API_KEY='$GEMINI_API_KEY >> ~/.bashrc
-6. nohup make dev-shell > /tmp/streamlit.log 2>&1 &
-7. sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
-8. 看到 200 後，告訴我點 Cloud Shell 右上角 Web Preview → port 8080
-每步確認成功再繼續，用繁體中文回覆。
+4. 問我要 GEMINI_API_KEY（從 https://aistudio.google.com/app/apikey 取得，沒有可跳過進 Mock 模式）
+5. cp .env.example .env，然後用 sed 把 .env 裡的 GEMINI_API_KEY=your-gemini-api-key-here 替換成我提供的 key。同時加一行 GOOGLE_API_KEY=同樣的key（ADK 需要）
+6. cat .env | grep API_KEY 確認寫入成功
+7. nohup make dev-shell > /tmp/streamlit.log 2>&1 &
+8. sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
+9. 看到 200 後，告訴我點 Cloud Shell 右上角 Web Preview → port 8080
 ```
 
 **預期結果：**
@@ -173,13 +173,15 @@ cd digest-agent
 uv sync --all-extras
 ```
 
-**步驟 3 — 設定 API Key**
+**步驟 3 — 設定 API Key（寫入 .env）**
 
 詢問學員：「請提供你的 GEMINI_API_KEY，可從 https://aistudio.google.com/app/apikey 免費取得。沒有也可以，會進 Mock 模式。」
 
 ```bash
-export GEMINI_API_KEY=學員的key
-echo 'export GEMINI_API_KEY=學員的key' >> ~/.bashrc
+cp .env.example .env
+sed -i 's/GEMINI_API_KEY=your-gemini-api-key-here/GEMINI_API_KEY=學員的key/' .env
+echo 'GOOGLE_API_KEY=學員的key' >> .env
+cat .env | grep API_KEY   # 確認寫入成功
 ```
 
 **步驟 4 — 啟動 Streamlit**
@@ -245,13 +247,10 @@ gcloud run services describe digest-agent-workshop --region asia-east1 --format 
 銜接語：「剛才你改了一個 AI 的 prompt。接下來我們在同一個 app 裡，
 讓多個 AI 各司其職，協作分析一支股票。」
 
-**步驟 1 — 設定 ADK API Key + 確認頁面**
-```bash
-# ADK 需要 GOOGLE_API_KEY（不是 GEMINI_API_KEY）
-export GOOGLE_API_KEY=$GEMINI_API_KEY
-```
+**步驟 1 — 確認頁面**
+
 告訴學員：「刷新 Web Preview port 8080，左側選單已有📈 個股分析」
-（Phase 4 已包含在 main branch，Phase 1 clone 時就有了）
+（Phase 1 寫入 .env 時已設定 GOOGLE_API_KEY，Phase 4 直接可用）
 
 **步驟 2 — 先 Fetch 財經新聞（銜接 Phase 1）**
 
