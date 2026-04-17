@@ -48,6 +48,59 @@ _FALLBACK_SOURCES = [
 ]
 
 
+def search_db_articles(company_name: str, ticker: str = "", limit: int = 10) -> dict:
+    """從 DB 搜尋已抓取的文章（Phase 1-3 Fetch 存入的資料）。
+    這是最快的方式，因為資料已經在本地 DB，不需要重新抓取 RSS。
+
+    Args:
+        company_name: 公司名稱（例如「台積電」）
+        ticker: 選填的股票代號（例如 "2330"）
+        limit: 最多回傳幾篇，預設 10
+
+    Returns:
+        包含搜尋結果的字典
+    """
+    from src.models.database import SessionLocal, ArticleDB
+
+    keywords = [company_name]
+    if ticker:
+        keywords.append(ticker)
+
+    db = SessionLocal()
+    try:
+        articles = db.query(ArticleDB).order_by(ArticleDB.created_at.desc()).all()
+
+        matched = []
+        for a in articles:
+            text = f"{a.title} {a.content or ''}"
+            if any(kw in text for kw in keywords):
+                matched.append(
+                    {
+                        "title": a.title,
+                        "source": a.source,
+                        "url": a.source_url,
+                        "published_at": str(a.published_at) if a.published_at else None,
+                        "snippet": (a.content or "")[:300],
+                        "has_summary": bool(a.summary),
+                        "summary_preview": (a.summary or "")[:200] if a.summary else None,
+                    }
+                )
+                if len(matched) >= limit:
+                    break
+
+        return {
+            "status": "success",
+            "source": "local_db",
+            "company": company_name,
+            "ticker": ticker,
+            "articles": matched,
+            "total_matched": len(matched),
+            "total_in_db": len(articles),
+        }
+    finally:
+        db.close()
+
+
 def search_company_news(company_name: str, ticker: str = "") -> dict:
     """搜尋特定公司的近期新聞。會從 RSS 財經來源抓取後篩選含有公司名稱或代號的文章。
 

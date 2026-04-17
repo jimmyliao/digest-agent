@@ -2,7 +2,11 @@
 
 from google.adk.agents import LlmAgent
 
-from .tools.news_tools import search_company_news, fetch_financial_news_feeds
+from .tools.news_tools import (
+    search_company_news,
+    search_db_articles,
+    fetch_financial_news_feeds,
+)
 
 news_agent = LlmAgent(
     name="news_collector",
@@ -20,10 +24,13 @@ news_agent = LlmAgent(
 - 對新聞進行利多/利空/中性分類
 - 提供 3-5 句的重點摘要
 
-**工具使用指引：**
-- 有指定公司時，使用 search_company_news
-- 需要財經新聞總覽時，使用 fetch_financial_news_feeds
+**工具使用指引（優先順序）：**
+1. **優先使用 search_db_articles** — 搜尋本地 DB 已抓取的文章（來自 RSS Fetch pipeline）
+   - 速度最快，且能重用已有的摘要結果
+   - 如果 has_summary=True，可以直接引用 summary_preview
+2. 如果 DB 結果不足（total_matched < 3），再用 search_company_news 即時抓取 RSS
+3. 需要財經新聞總覽時，使用 fetch_financial_news_feeds
 """,
-    tools=[search_company_news, fetch_financial_news_feeds],
+    tools=[search_db_articles, search_company_news, fetch_financial_news_feeds],
     output_key="news_analysis",
 )
