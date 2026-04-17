@@ -5,6 +5,22 @@
 
 ---
 
+## 🔄 重新開啟 Cloud Shell（已 clone 過）
+> Cloud Shell session 斷掉後，重新啟動 Streamlit
+
+```
+@CLOUD_SHELL_WORKSHOP.md 我重新開啟 Cloud Shell，專案已經 clone 過了。
+請幫我重啟 Streamlit 並確認 Web Preview 可用。
+```
+
+**Gemini 會執行：**
+1. `cd ~/digest-agent && source ~/.bashrc`
+2. `kill $(lsof -ti:8080) 2>/dev/null`（清掉舊 process）
+3. `nohup make dev-shell > /tmp/streamlit.log 2>&1 &`
+4. 確認 port 8080 回應 200 → 提示開 Web Preview
+
+---
+
 ## ✨ Phase 1 Magic Prompt
 > 安裝環境 + Clone + 啟動 Streamlit + Web Preview
 
