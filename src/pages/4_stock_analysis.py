@@ -61,10 +61,11 @@ with st.sidebar:
     st.markdown(
         """
     ```
-    stock_orchestrator
-    ├── news_collector
-    ├── industry_analyst
-    └── market_analyst
+    stock_analysis_pipeline (Sequential)
+    ├── 1. news_collector    → DB/RSS 新聞
+    ├── 2. industry_analyst  → 產業分析
+    ├── 3. market_analyst    → 市場趨勢
+    └── 4. stock_orchestrator → 整合報告
     ```
     """
     )
