@@ -31,17 +31,17 @@ def _load_finance_sources() -> list[dict]:
 # settings.yaml 讀不到時的 fallback
 _FALLBACK_SOURCES = [
     {
-        "id": "moneyudn",
-        "url": "https://money.udn.com/rssfeed/news/1001/5710?ch=money",
+        "id": "yahoo-tw-stock",
+        "url": "https://tw.stock.yahoo.com/rss",
         "enabled": True,
     },
     {
-        "id": "cnyes",
-        "url": "https://news.cnyes.com/news/cat/tw_stock/rss",
+        "id": "twse-news",
+        "url": "https://www.twse.com.tw/rwd/zh/news/feed?type=rss",
         "enabled": True,
     },
     {
-        "id": "technews_finance",
+        "id": "technews-finance",
         "url": "https://technews.tw/feed/",
         "enabled": True,
     },

@@ -22,16 +22,16 @@ sources:
     category: ai
 
   # 台股財經 — Phase 4 個股分析 news_collector 也會讀取這些來源
-  - id: moneyudn
-    name: 經濟日報 - 台股
-    url: https://money.udn.com/rssfeed/news/1001/5710?ch=money
+  - id: yahoo-tw-stock
+    name: Yahoo 台灣股市
+    url: https://tw.stock.yahoo.com/rss
     type: rss
     enabled: true
     frequency_hours: 6
     category: finance_tw
-  - id: cnyes
-    name: 鉅亨網 - 台股
-    url: https://news.cnyes.com/news/cat/tw_stock/rss
+  - id: twse-news
+    name: TWSE 台灣證交所
+    url: https://www.twse.com.tw/rwd/zh/news/feed?type=rss
     type: rss
     enabled: true
     frequency_hours: 6
