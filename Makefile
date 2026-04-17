@@ -10,7 +10,7 @@ install:
 	uv sync --all-extras
 
 dev:
-	set -a && source $(ENV_FILE) && set +a && \
+	set -a && . $(ENV_FILE) && set +a && \
 	uv run streamlit run src/app.py --server.port=8080
 
 # Cloud Shell / CI: reads .env if present, falls back to shell env vars
@@ -90,7 +90,7 @@ adk-run:
 	uv run adk run agents/stock
 
 shell:
-	set -a && source $(ENV_FILE) && set +a && \
+	set -a && . $(ENV_FILE) && set +a && \
 	uv run python -c "from src.models.database import init_db; init_db(); print('DB initialized')"
 
 clean:
@@ -99,7 +99,7 @@ clean:
 	rm -rf .pytest_cache dist .ruff_cache
 
 debug:
-	set -a && source $(ENV_FILE) && set +a && \
+	set -a && . $(ENV_FILE) && set +a && \
 	uv run python -c "\
 from src.models.database import init_db; \
 from src.orchestrator import DigestOrchestrator; \
