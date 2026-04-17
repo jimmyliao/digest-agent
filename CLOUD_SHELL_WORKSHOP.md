@@ -14,11 +14,12 @@
 2. git clone https://github.com/jimmyliao/digest-agent.git && cd digest-agent
 3. uv sync --all-extras
 4. 問我要 GEMINI_API_KEY（從 https://aistudio.google.com/app/apikey 取得，沒有可跳過進 Mock 模式）
-5. cp .env.example .env，然後用 sed 把 .env 裡的 GEMINI_API_KEY=your-gemini-api-key-here 替換成我提供的 key。同時加一行 GOOGLE_API_KEY=同樣的key（ADK 需要）
+5. cp .env.example .env，然後用 sed 把 .env 裡的 GEMINI_API_KEY=your-gemini-api-key-here 替換成我提供的 key。同時把 GOOGLE_API_KEY=your-gemini-api-key-here 也替換成同樣的 key（ADK 需要）
 6. cat .env | grep API_KEY 確認寫入成功
-7. nohup make dev-shell > /tmp/streamlit.log 2>&1 &
-8. sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
-9. 看到 200 後，告訴我點 Cloud Shell 右上角 Web Preview → port 8080
+7. 驗證 API Key 可用：source .env && uv run python -c "from google.genai import Client; c=Client(api_key='$GEMINI_API_KEY'); r=c.models.generate_content(model='gemini-2.5-flash',contents='說 OK'); print('API Key 驗證成功：', r.text[:20])"。如果失敗，告訴我 key 可能無效，但可以繼續（Mock 模式）
+8. nohup make dev-shell > /tmp/streamlit.log 2>&1 &
+9. sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
+10. 看到 200 後，告訴我點 Cloud Shell 右上角 Web Preview → port 8080
 ```
 
 **預期結果：**
@@ -180,9 +181,21 @@ uv sync --all-extras
 ```bash
 cp .env.example .env
 sed -i 's/GEMINI_API_KEY=your-gemini-api-key-here/GEMINI_API_KEY=學員的key/' .env
-echo 'GOOGLE_API_KEY=學員的key' >> .env
+sed -i 's/GOOGLE_API_KEY=your-gemini-api-key-here/GOOGLE_API_KEY=學員的key/' .env
 cat .env | grep API_KEY   # 確認寫入成功
 ```
+
+**步驟 3.5 — 驗證 API Key（快速測試）**
+```bash
+source .env && uv run python -c "
+from google.genai import Client
+c = Client(api_key='$GEMINI_API_KEY')
+r = c.models.generate_content(model='gemini-2.5-flash', contents='說 OK')
+print('API Key 驗證成功：', r.text[:20])
+"
+```
+- ✅ 看到「API Key 驗證成功」→ 繼續
+- ❌ 失敗 → 告訴學員 key 可能無效，可繼續（Mock 模式）
 
 **步驟 4 — 啟動 Streamlit**
 ```bash
