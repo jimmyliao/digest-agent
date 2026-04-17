@@ -1,0 +1,10 @@
+{
+  "name": "@digest/adk",
+  "version": "0.1.0",
+  "description": "Google ADK TypeScript implementation of digest-agent agents",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@google/adk": "^0.1.0",
+    "@leapcore/iface": "workspace:*"
+  }
+}

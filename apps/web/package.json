@@ -1,0 +1,26 @@
+{
+  "name": "@digest/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "ai": "^4.0.0",
+    "@ai-sdk/google": "^1.0.0",
+    "@ai-sdk/anthropic": "^1.0.0",
+    "better-sqlite3": "^9.0.0",
+    "@leapcore/iface": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/better-sqlite3": "^7.0.0",
+    "typescript": "^5.0.0"
+  }
+}

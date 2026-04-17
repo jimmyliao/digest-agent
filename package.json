@@ -1,0 +1,5 @@
+{
+  "name": "digest-agent-monorepo",
+  "private": true,
+  "workspaces": ["packages/*", "apps/*"]
+}
