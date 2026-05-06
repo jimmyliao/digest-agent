@@ -12,15 +12,15 @@ export async function POST(req: NextRequest) {
   const provider = body.provider ?? process.env.LLM_PROVIDER ?? 'gemini';
   const articleIds: number[] | undefined = body.articleIds;
 
-  // Get pending articles
+  // Only summarize pending articles (enforce lifecycle: pending → summarized)
   let articles: { id: number; title: string; content: string }[];
   if (articleIds?.length) {
     articles = articleIds
-      .map(id => db.query('SELECT id, title, content FROM articles WHERE id = ?').get(id))
+      .map(id => db.query("SELECT id, title, content FROM articles WHERE id = ? AND publish_status = 'pending'").get(id))
       .filter(Boolean) as { id: number; title: string; content: string }[];
   } else {
     articles = db
-      .query("SELECT id, title, content FROM articles WHERE publish_status = 'pending' LIMIT 10")
+      .query("SELECT id, title, content FROM articles WHERE publish_status = 'pending' LIMIT 20")
       .all() as { id: number; title: string; content: string }[];
   }
 

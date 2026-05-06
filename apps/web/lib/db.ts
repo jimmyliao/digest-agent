@@ -209,12 +209,27 @@ function insertArticle(article: Article): number {
   return result.lastInsertRowid as number;
 }
 
-function getArticlesByStatus(status: string = 'all', limit: number = 50): Article[] {
+function getArticlesByStatus(status: string = 'all', limit: number = 50, offset: number = 0): Article[] {
   const db = getDb();
   if (status === 'all') {
-    return db.query(`SELECT * FROM articles ORDER BY created_at DESC LIMIT ?`).all(limit) as Article[];
+    return db.query(`SELECT * FROM articles ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(limit, offset) as Article[];
   }
-  return db.query(`SELECT * FROM articles WHERE publish_status = ? ORDER BY created_at DESC LIMIT ?`).all(status, limit) as Article[];
+  return db.query(`SELECT * FROM articles WHERE publish_status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(status, limit, offset) as Article[];
+}
+
+function countArticlesByStatus(status: string = 'all'): number {
+  const db = getDb();
+  if (status === 'all') {
+    const row = db.query(`SELECT COUNT(*) AS n FROM articles`).get() as { n: number };
+    return row.n;
+  }
+  const row = db.query(`SELECT COUNT(*) AS n FROM articles WHERE publish_status = ?`).get(status) as { n: number };
+  return row.n;
+}
+
+function getArticleById(id: number): Article | null {
+  const db = getDb();
+  return (db.query(`SELECT * FROM articles WHERE id = ?`).get(id) as Article | undefined) ?? null;
 }
 
 function updateArticleStatus(id: number, status: string, summary?: string): void {
@@ -249,4 +264,4 @@ function getRecentTasks(limit: number = 20): unknown[] {
   return getDb().query('SELECT * FROM task_records ORDER BY created_at DESC LIMIT ?').all(limit);
 }
 
-export { getDb, initDb, insertArticle, getArticlesByStatus, updateArticleStatus, createTask, updateTask, getRecentTasks };
+export { getDb, initDb, insertArticle, getArticlesByStatus, countArticlesByStatus, getArticleById, updateArticleStatus, createTask, updateTask, getRecentTasks };

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const results: Record<string, unknown> = {};
   let completed = 0;
 
-  const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  const baseUrl = process.env.NEXTAUTH_URL ?? req.nextUrl.origin;
 
   try {
     for (const step of steps) {

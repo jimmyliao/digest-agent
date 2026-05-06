@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 type Step = 'fetch' | 'summarize' | 'publish';
 type Provider = 'gemini' | 'claude';
@@ -12,12 +12,79 @@ interface StepResult {
   error?: string;
 }
 
+interface PersistedState {
+  provider: Provider;
+  results: StepResult[];
+  streamOutput: string[];
+  savedAt: number;
+}
+
+const STORAGE_KEY = 'digest-agent:publish:v1';
+
+function loadPersisted(): PersistedState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function formatRelative(ts: number): string {
+  const diff = Date.now() - ts;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return '剛剛';
+  if (min < 60) return `${min} 分鐘前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} 小時前`;
+  return `${Math.floor(hr / 24)} 天前`;
+}
+
 export default function PublishPage() {
   const [provider, setProvider] = useState<Provider>('gemini');
   const [running, setRunning] = useState<Step | null>(null);
   const [results, setResults] = useState<StepResult[]>([]);
   const [streamOutput, setStreamOutput] = useState<string[]>([]);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const streamRef = useRef<HTMLDivElement>(null);
+
+  // Hydrate from localStorage on mount
+  useEffect(() => {
+    const persisted = loadPersisted();
+    if (persisted) {
+      setProvider(persisted.provider);
+      setResults(persisted.results);
+      setStreamOutput(persisted.streamOutput);
+      setSavedAt(persisted.savedAt);
+    }
+    setHydrated(true);
+  }, []);
+
+  // Persist on change (skip until hydrated to avoid overwriting with defaults)
+  useEffect(() => {
+    if (!hydrated) return;
+    const ts = Date.now();
+    const payload: PersistedState = { provider, results, streamOutput, savedAt: ts };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      setSavedAt(ts);
+    } catch { /* quota exceeded — ignore */ }
+  }, [provider, results, streamOutput, hydrated]);
+
+  function clearPersisted() {
+    localStorage.removeItem(STORAGE_KEY);
+    setResults([]);
+    setStreamOutput([]);
+    setSavedAt(null);
+  }
+
+  useEffect(() => {
+    if (streamRef.current) {
+      streamRef.current.scrollTop = streamRef.current.scrollHeight;
+    }
+  }, [streamOutput]);
 
   function addStream(line: string) {
     setStreamOutput(prev => {
@@ -178,7 +245,29 @@ export default function PublishPage() {
       {/* Results */}
       {results.length > 0 && (
         <div>
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Results</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>Results</h2>
+            {savedAt && (
+              <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                上次執行：{formatRelative(savedAt)}
+              </span>
+            )}
+            <button
+              onClick={clearPersisted}
+              style={{
+                marginLeft: 'auto',
+                padding: '0.25rem 0.625rem',
+                fontSize: '0.7rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.25rem',
+                background: 'white',
+                color: '#6b7280',
+                cursor: 'pointer',
+              }}
+            >
+              清除
+            </button>
+          </div>
           {results.map((r, i) => (
             <div key={i} style={{
               padding: '0.5rem 0.75rem', marginBottom: '0.5rem',

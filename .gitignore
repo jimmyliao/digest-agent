@@ -32,3 +32,27 @@ htmlcov/
 # macOS
 .DS_Store
 firebase-debug.log
+
+# Node / Next.js
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
+# DB backups
+*.bak
+*.legacy-*
+
+# Large media (demo recordings, slides, submissions)
+*.mp4
+*.webm
+*.pdf
+!docs/**/*.pdf
+
+# AIA showcase scratch (move to _archive/ when done)
+AIA_*.md
+AIA_*.txt
+aia-*.md
+aia-*.png
+aia-submission*
+page@*.webm
