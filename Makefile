@@ -81,6 +81,18 @@ deploy-workshop:
 	  --set-env-vars "GEMINI_API_KEY=$(GEMINI_API_KEY)" \
 	  --set-env-vars "DATABASE_URL=sqlite:////tmp/digest.db"
 
+# GEAP / Vertex AI Agent Engine: deploy agents/stock SequentialAgent as managed agent
+# Usage: GCP_PROJECT=xxx STAGING_BUCKET=gs://xxx GEMINI_API_KEY=xxx make deploy-agent-engine
+# See GEAP_DEPLOY.md for prerequisites (gcloud auth, IAM, APIs, bucket).
+deploy-agent-engine:
+	@if [ -z "$(GCP_PROJECT)" ] || [ -z "$(STAGING_BUCKET)" ] || [ -z "$(GEMINI_API_KEY)" ]; then \
+	  echo "❌ Missing env vars. Usage:"; \
+	  echo "   GCP_PROJECT=xxx STAGING_BUCKET=gs://xxx GEMINI_API_KEY=xxx make deploy-agent-engine"; \
+	  exit 1; \
+	fi
+	uv sync --extra geap
+	uv run python -m agents.stock.deploy_to_agent_engine
+
 # ADK: launch web UI to test stock analysis agents interactively
 adk-web:
 	uv run adk web agents
