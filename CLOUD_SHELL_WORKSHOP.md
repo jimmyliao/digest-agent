@@ -271,6 +271,47 @@ gcloud run services describe digest-agent-workshop --region asia-east1 --format 
 
 ---
 
+### Phase 3 補充：Cloud Run + SQLite 限制（給好奇的學員）
+
+**為什麼 demo 用 SQLite 寫到 `/tmp` 就夠？**
+
+- Cloud Run 容器除 `/tmp` 外是 read-only 檔案系統
+- `make deploy-workshop` 已自動設 `DATABASE_URL=sqlite:////tmp/digest.db`
+- 單人 demo、現場按 Fetch 看摘要的場景跑得起來
+
+**但這是 ephemeral，要先講清楚**：
+
+| 場景 | 結果 |
+|------|------|
+| 同一 instance、5 分鐘內回來看 | ✅ 資料還在 |
+| Instance 被 Cloud Run 縮容（沒流量數分鐘） | ❌ 資料清空 |
+| 多 instance 同時起來分流 | ❌ 各自的 `/tmp` 不互通 |
+| Cold start（min-instances=0） | ❌ 新 instance = 空 DB |
+
+**Production 升級路徑（Stretch goal，~5 分鐘）**：
+
+```bash
+# 1. 建最便宜的 Cloud SQL Postgres
+gcloud sql instances create digest-pg \
+  --tier=db-f1-micro --region=asia-east1 \
+  --database-version=POSTGRES_15
+
+# 2. 建 db + user
+gcloud sql databases create digest --instance=digest-pg
+gcloud sql users create digest --instance=digest-pg --password=YOUR_PW
+
+# 3. 重新 deploy 並掛 Cloud SQL connector
+gcloud run deploy digest-agent-workshop \
+  --source . --region asia-east1 --port 8080 \
+  --add-cloudsql-instances=PROJECT_ID:asia-east1:digest-pg \
+  --set-env-vars GEMINI_API_KEY=$GEMINI_API_KEY \
+  --set-env-vars "DATABASE_URL=postgresql+psycopg2://digest:YOUR_PW@/digest?host=/cloudsql/PROJECT_ID:asia-east1:digest-pg"
+```
+
+`pyproject.toml` 已裝 `psycopg2-binary`，**不用改任何 code**，換 `DATABASE_URL` 即可。
+
+---
+
 ### Phase 4 執行細節（ADK Multi-Agent）
 
 銜接語：「剛才你改了一個 AI 的 prompt。接下來我們在同一個 app 裡，
@@ -348,7 +389,8 @@ gemini -p "打開 agents/stock/industry_agent.py，在 instruction 裡加上『�
 | port 8080 沒回應 | `tail -20 /tmp/streamlit.log` |
 | Telegram `chat not found` | 先在 Telegram 對 Bot 按 **Start** |
 | Cloud Run deploy 失敗 | 確認 billing：`gcloud beta billing projects describe <project-id>` |
-| Cloud Run 第一次開很慢 | Cold start，等 10 秒重整 |
+| Cloud Run 第一次開很慢 | Cold start，等 10-30 秒重整 |
+| Cloud Run 重啟後新文章不見 | `/tmp` SQLite 是 ephemeral 屬正常 — 升級 Postgres 才能持久化（見 Phase 3 補充） |
 | Gemini API 429 | 摘要數量調低（UI slider） |
 | 沒有 API Key | Mock 模式，摘要是假的但流程完整 |
 | 環境完全壞掉（最後手段） | `sudo rm -rf $HOME` → 點 ⋮ → 重新啟動（**$HOME 全刪**） |
