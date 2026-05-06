@@ -8,10 +8,19 @@ export async function POST(req: NextRequest) {
   const db = getDb();
   const body = await req.json().catch(() => ({}));
   const channels: string[] = body.channels ?? ['telegram'];
+  const articleIds: number[] | undefined = body.articleIds;
 
-  const summarizedArticles = db.query(
-    "SELECT id, title, summary, source FROM articles WHERE publish_status = 'summarized' LIMIT 20"
-  ).all() as { id: number; title: string; summary: string; source: string }[];
+  // Only publish summarized articles (enforce lifecycle: summarized → published)
+  let summarizedArticles: { id: number; title: string; summary: string; source: string }[];
+  if (articleIds?.length) {
+    summarizedArticles = articleIds
+      .map(id => db.query("SELECT id, title, summary, source FROM articles WHERE id = ? AND publish_status = 'summarized'").get(id))
+      .filter(Boolean) as { id: number; title: string; summary: string; source: string }[];
+  } else {
+    summarizedArticles = db.query(
+      "SELECT id, title, summary, source FROM articles WHERE publish_status = 'summarized' LIMIT 20"
+    ).all() as { id: number; title: string; summary: string; source: string }[];
+  }
 
   if (summarizedArticles.length === 0) {
     return NextResponse.json({

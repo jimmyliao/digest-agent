@@ -9,7 +9,7 @@ export function getModel(provider?: LLMProvider) {
   if (p === 'claude') {
     return createAnthropic()('claude-sonnet-4-6');
   }
-  return createGoogleGenerativeAI()('gemini-2.5-flash-preview-04-17');
+  return createGoogleGenerativeAI()('gemini-2.0-flash');
 }
 
 export async function summarizeArticle(
