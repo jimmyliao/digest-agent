@@ -149,6 +149,21 @@ else
   errors=$((errors+1))
 fi
 
+# 5b. ADC quota project must match deploy target (otherwise SessionService etc. → RESOURCE_PROJECT_INVALID)
+adc_qp=$(python3 -c "import json,sys,os; p=os.path.expanduser('~/.config/gcloud/application_default_credentials.json'); print(json.load(open(p)).get('quota_project_id','')) if os.path.exists(p) else print('')" 2>/dev/null)
+if [[ -z "$adc_qp" ]]; then
+  echo "  ⚠️  ADC quota project not set — set with:"
+  echo "     gcloud auth application-default set-quota-project $GCP_PROJECT"
+  warns=$((warns+1))
+elif [[ "$adc_qp" != "$GCP_PROJECT" ]]; then
+  echo "  ❌ ADC quota project ($adc_qp) ≠ deploy project ($GCP_PROJECT)" >&2
+  echo "     → Will cause RESOURCE_PROJECT_INVALID on SessionService later." >&2
+  echo "     → Fix: gcloud auth application-default set-quota-project $GCP_PROJECT" >&2
+  errors=$((errors+1))
+else
+  echo "  ✅ ADC quota project matches: $adc_qp"
+fi
+
 # 6. IAM roles (caller needs aiplatform.user + storage.admin, or owner/editor)
 caller=$(gcloud config get account 2>/dev/null || echo "")
 if [[ -n "$caller" ]]; then
