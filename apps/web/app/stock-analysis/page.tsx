@@ -8,7 +8,7 @@
  * report (concatenated text from all model turns).
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 // localStorage cache so a browser refresh doesn't wipe the last analysis.
 // Stored as JSON: { query, events, savedAt }. TTL not enforced — cleared
@@ -82,10 +82,14 @@ export default function StockAnalysisPage() {
     setError(null);
   }
 
-  const finalText = events
-    .filter(e => e.type === 'event')
-    .flatMap(e => (e.parts ?? []).map(p => p.text).filter(Boolean))
-    .join('\n');
+  // Memoized so typing in the input box doesn't re-flatMap on every keystroke.
+  const finalText = useMemo(
+    () => events
+      .filter(e => e.type === 'event')
+      .flatMap(e => (e.parts ?? []).map(p => p.text).filter(Boolean))
+      .join('\n'),
+    [events],
+  );
 
   async function handleSubmit() {
     if (!query.trim() || running) return;
