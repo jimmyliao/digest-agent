@@ -152,7 +152,7 @@ def main() -> None:
     logs_query = f"resource.type%3D%22aiplatform.googleapis.com%2FReasoningEngine%22%20resource.labels.reasoning_engine_id%3D%22{engine_id}%22"
     print(
         "\n🔗 Console links:\n"
-        f"  Agent Engines list : {console_base}/vertex-ai/agents/agent-engines?project={project}\n"
+        f"  Agent Runtime list : {console_base}/agent-platform/runtimes?project={project}\n"
         f"    → engine_id to find: {engine_id}\n"
         f"  Logs (this engine) : {console_base}/logs/query;query={logs_query}?project={project}\n"
         f"  Staging bucket     : {console_base}/storage/browser/{bucket.removeprefix('gs://')}?project={project}\n"

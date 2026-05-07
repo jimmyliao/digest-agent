@@ -98,6 +98,10 @@ deploy-agent-engine:
 invoke-agent-engine:
 	./scripts/invoke-agent-engine.sh
 
+# List Agent Engines deployed to GCP project (filter by display_name prefix)
+list-agent-engines:
+	./scripts/list-agent-engines.sh --filter digest-agent
+
 # ADK: launch web UI to test stock analysis agents interactively
 adk-web:
 	uv run adk web agents
