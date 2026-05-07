@@ -211,6 +211,21 @@ function initDb(): void {
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS stock_analyses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    query TEXT NOT NULL,
+    events_json TEXT NOT NULL,
+    events_size INTEGER,
+    llm_calls INTEGER,
+    tool_calls INTEGER,
+    duration_ms INTEGER,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`);
+
+  db.run(`CREATE INDEX IF NOT EXISTS idx_stock_analyses_user_created
+    ON stock_analyses(user_id, created_at DESC)`);
+
   // Seed RSS sources if empty
   const count = (db.query('SELECT COUNT(*) as c FROM sources').get() as { c: number }).c;
   if (count === 0) {
@@ -314,4 +329,88 @@ function getRecentTasks(limit: number = 20): unknown[] {
   return getDb().query('SELECT * FROM task_records ORDER BY created_at DESC LIMIT ?').all(limit);
 }
 
-export { getDb, initDb, insertArticle, getArticlesByStatus, countArticlesByStatus, getArticleById, updateArticleStatus, createTask, updateTask, getRecentTasks };
+// ── Stock analysis history ───────────────────────────────────────────────────
+export interface StockAnalysisInsert {
+  user_id: string;
+  query: string;
+  events_json: string;
+  events_size: number;
+  llm_calls?: number | null;
+  tool_calls?: number | null;
+  duration_ms?: number | null;
+}
+
+export interface StockAnalysisListItem {
+  id: number;
+  query: string;
+  llm_calls: number | null;
+  tool_calls: number | null;
+  duration_ms: number | null;
+  created_at: string;
+}
+
+export interface StockAnalysisRecord extends StockAnalysisListItem {
+  events_json: string;
+  user_id: string;
+}
+
+function insertStockAnalysis(row: StockAnalysisInsert): number {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO stock_analyses
+      (user_id, query, events_json, events_size, llm_calls, tool_calls, duration_ms)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    row.user_id,
+    row.query,
+    row.events_json,
+    row.events_size,
+    row.llm_calls ?? null,
+    row.tool_calls ?? null,
+    row.duration_ms ?? null,
+  );
+  return result.lastInsertRowid as number;
+}
+
+function listStockAnalysesByUser(userId: string, limit: number): StockAnalysisListItem[] {
+  const db = getDb();
+  return db
+    .query(
+      `SELECT id, query, llm_calls, tool_calls, duration_ms, created_at
+         FROM stock_analyses
+        WHERE user_id = ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?`,
+    )
+    .all(userId, limit) as StockAnalysisListItem[];
+}
+
+function getStockAnalysisById(id: number): StockAnalysisRecord | null {
+  const db = getDb();
+  return (
+    (db
+      .query(
+        `SELECT id, user_id, query, events_json, llm_calls, tool_calls, duration_ms, created_at
+           FROM stock_analyses
+          WHERE id = ?`,
+      )
+      .get(id) as StockAnalysisRecord | undefined) ?? null
+  );
+}
+
+export {
+  getDb,
+  initDb,
+  insertArticle,
+  getArticlesByStatus,
+  countArticlesByStatus,
+  getArticleById,
+  updateArticleStatus,
+  createTask,
+  updateTask,
+  getRecentTasks,
+  insertStockAnalysis,
+  listStockAnalysesByUser,
+  getStockAnalysisById,
+};
