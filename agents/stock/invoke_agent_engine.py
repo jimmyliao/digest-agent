@@ -22,23 +22,14 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
-from pathlib import Path
 
-REGISTRY_FILE = "deployed-agent-engines.txt"
 DEFAULT_MESSAGE = "分析台積電 AI 晶片供應鏈"
 AUTO_DISCOVER_PREFIX = "digest-agent"
 
 
 def latest_resource_from_registry() -> str | None:
-    p = Path(REGISTRY_FILE)
-    if not p.exists():
-        return None
-    lines = [ln.strip() for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
-    if not lines:
-        return None
-    # Format: "<iso-utc>\t<resource_name>"
-    parts = lines[-1].split("\t")
-    return parts[1] if len(parts) >= 2 else None
+    from agents.stock import _registry
+    return _registry.latest()
 
 
 def auto_discover(project: str, location: str, prefix: str = AUTO_DISCOVER_PREFIX) -> str | None:

@@ -5,6 +5,7 @@
 #   ./scripts/list-agent-engines.sh                          # all
 #   ./scripts/list-agent-engines.sh --filter digest-agent    # filter by display_name prefix
 #   ./scripts/list-agent-engines.sh --filter digest-agent --require-unique  # exit 1 if !=1
+#   ./scripts/list-agent-engines.sh --filter digest-agent --sync   # append matched into registry
 #   ./scripts/list-agent-engines.sh --json                   # JSON output
 #
 # Reads GCP_PROJECT / GCP_LOCATION from .env.deploy / .env (same loader as deploy.sh).
