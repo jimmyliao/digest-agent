@@ -133,34 +133,56 @@ def main() -> None:
     )
 
     print("🚀 Deploying to Agent Engine Runtime (3-5 min)...")
-    remote = client.agent_engines.create(
-        agent=app,
-        config={
-            "requirements": [
-                "google-cloud-aiplatform[agent_engines,adk]>=1.112",
-                "google-adk>=1.0.0",
-                "google-genai>=1.0.0",
-                "pydantic",      # ADK uses pydantic models internally
-                "cloudpickle",   # agent_engines serializes the agent via cloudpickle
-            ],
-            "extra_packages": ["agents"],   # include agents/ source tree so 'agents.stock.*' imports work in deployed env
-            "staging_bucket": bucket,
-            "display_name": "digest-agent-stock-analyzer",
-            "identity_type": "AGENT_IDENTITY",  # use managed identity so engine can call internal aiplatform APIs (SessionService etc.)
-            "env_vars": {
-                # GEAP auto-injects GOOGLE_CLOUD_PROJECT / GOOGLE_CLOUD_LOCATION
-                # (they're reserved). Setting them here triggers FAILED_PRECONDITION.
-                #
-                # Route Gemini calls through Vertex AI (uses managed service account)
-                # instead of AI Studio API key. Without this, GOOGLE_API_KEY in env
-                # can pollute the genai client into API-key auth mode, which then
-                # breaks SessionService.CreateSession with RESOURCE_PROJECT_INVALID.
-                "GOOGLE_GENAI_USE_VERTEXAI": "true",
-                # API key is no longer needed when GOOGLE_GENAI_USE_VERTEXAI=true
-                # — engine uses its managed SA for both Gemini and SessionService.
+
+    # Heartbeat ticker so user sees deploy isn't frozen
+    import threading
+    import time
+    stop_event = threading.Event()
+
+    def _ticker() -> None:
+        start = time.time()
+        # Print at 30s, 60s, 90s, ... up to ~10 min
+        while not stop_event.wait(30):
+            elapsed = int(time.time() - start)
+            m, s = divmod(elapsed, 60)
+            print(f"  ⏱  Still deploying... ({m}m {s:02d}s elapsed)", flush=True)
+
+    ticker = threading.Thread(target=_ticker, daemon=True)
+    ticker.start()
+
+    try:
+        remote = client.agent_engines.create(
+            agent=app,
+            config={
+                "requirements": [
+                    "google-cloud-aiplatform[agent_engines,adk]>=1.112",
+                    "google-adk>=1.0.0",
+                    "google-genai>=1.0.0",
+                    "pydantic",      # ADK uses pydantic models internally
+                    "cloudpickle",   # agent_engines serializes the agent via cloudpickle
+                ],
+                "extra_packages": ["agents"],   # include agents/ source tree so 'agents.stock.*' imports work in deployed env
+                "staging_bucket": bucket,
+                "display_name": "digest-agent-stock-analyzer",
+                "identity_type": "AGENT_IDENTITY",  # use managed identity so engine can call internal aiplatform APIs (SessionService etc.)
+                "env_vars": {
+                    # GEAP auto-injects GOOGLE_CLOUD_PROJECT / GOOGLE_CLOUD_LOCATION
+                    # (they're reserved). Setting them here triggers FAILED_PRECONDITION.
+                    #
+                    # Route Gemini calls through Vertex AI (uses managed service account)
+                    # instead of AI Studio API key. Without this, GOOGLE_API_KEY in env
+                    # can pollute the genai client into API-key auth mode, which then
+                    # breaks SessionService.CreateSession with RESOURCE_PROJECT_INVALID.
+                    "GOOGLE_GENAI_USE_VERTEXAI": "true",
+                    # API key is no longer needed when GOOGLE_GENAI_USE_VERTEXAI=true
+                    # — engine uses its managed SA for both Gemini and SessionService.
+                },
             },
-        },
-    )
+        )
+    finally:
+        stop_event.set()
+        ticker.join(timeout=1)
+
     resource_name = remote.api_resource.name
     # parse resource_name: projects/PROJECT_NUM/locations/LOCATION/reasoningEngines/ENGINE_ID
     engine_id = resource_name.rsplit("/", 1)[-1]
