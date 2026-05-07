@@ -20,26 +20,32 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Stage 1: builder ────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+# Uses Bun because repo root has bun.lock + workspace:* protocol in
+# apps/web/package.json (npm does not resolve workspace: when running
+# from a sub-package). Build artifacts are still plain Node-compatible
+# (Next.js standalone output → node server.js).
+FROM oven/bun:1.3-alpine AS builder
 WORKDIR /app
 
 # System deps for building better-sqlite3 (native addon)
 RUN apk add --no-cache python3 make g++ libc6-compat
 
-# Copy the web app + workspace package the web app depends on
-COPY apps/web/package.json apps/web/package-lock.json* ./apps/web/
+# Copy workspace root manifest + lockfile + per-package manifests so
+# `bun install` resolves the @leapcore/iface workspace dep correctly.
+COPY package.json bun.lock ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/leapcore-iface/package.json ./packages/leapcore-iface/
+COPY packages/digest-adk/package.json ./packages/digest-adk/
+
+RUN bun install --frozen-lockfile
+
+# Bring in the rest of the source tree
+COPY apps/web ./apps/web
 COPY packages ./packages
 
 WORKDIR /app/apps/web
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
-
-# Bring in the rest of the source tree
-WORKDIR /app
-COPY apps/web ./apps/web
-
-WORKDIR /app/apps/web
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN bun run build
 
 # ── Stage 2: runner ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
