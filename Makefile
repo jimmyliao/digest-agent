@@ -1,4 +1,4 @@
-.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run
+.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local test-local-e2e test-local-api-real
 
 ENV_FILE ?= .env
 WORKSPACE_ENV ?= $(HOME)/workspace/.env
@@ -135,3 +135,41 @@ init_db(); \
 orch = DigestOrchestrator(); \
 result = asyncio.run(orch.run_fetch_pipeline()); \
 print(result)"
+
+# Set up GCS bucket (gs://${GCP_PROJECT}-data) for Litestream-backed
+# Next.js apps/web/ SQLite persistence. Idempotent.
+# Usage: make setup-data-bucket
+setup-data-bucket:
+	@bash scripts/setup-data-bucket.sh
+
+# Deploy apps/web/ (Next.js + Litestream) to Cloud Run with GCS-backed
+# /data/digest.db. Reads LITESTREAM_GCS_BUCKET from .env.deploy.
+# Usage: make deploy-web
+deploy-web:
+	@bash scripts/deploy-web-to-cloud-run.sh
+
+# Run unit tests + bash lint locally (vitest + pytest + bash -n).
+# Usage: make test-local
+test-local:
+	@echo "🧪 Running unit tests + bash lint..."
+	cd apps/web && npm test
+	uv run pytest tests/ -v --no-header 2>&1 | tail -20
+	bash -n scripts/setup-data-bucket.sh scripts/deploy-web-to-cloud-run.sh infra/entrypoint.sh
+	@echo "✅ All local tests passed"
+
+# End-to-end local smoke (boots Next.js dev, hits API, exercises agent
+# HTTP/SQLite/fallback modes; auto-cleans the dev server on exit).
+# No GCS, no Cloud Run, no LLM key needed.
+# Usage: make test-local-e2e
+test-local-e2e:
+	@bash scripts/test-local-e2e.sh
+
+# Real-API smoke against an already-running dev server. Hits every
+# /api/* endpoint with REAL data (real RSS, real LLM call). Requires
+# GEMINI_API_KEY. Skips publish by default — pass --with-publish to
+# include real channel sends.
+# Usage:
+#   make test-local-api-real
+#   make test-local-api-real ARGS=--with-publish
+test-local-api-real:
+	@bash scripts/test-local-api-real.sh $(ARGS)
