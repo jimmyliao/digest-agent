@@ -89,6 +89,35 @@ cat AGENTS.md                 # project context, architecture, dev guidelines
 
 ---
 
+## OSS vs. LeapCore Cloud — what's covered here?
+
+This repo is a **personal / workshop demo**: single-tenant, SQLite + Litestream,
+zero ops. Take it, run it, learn from it.
+
+When you outgrow it, **LeapCore Cloud** picks up where this stops — multi-tenant
+KM, audit log, SLA, custom RAG plug-ins, enterprise SSO.
+
+| Feature | digest-agent OSS | LeapCore Cloud |
+|---------|------------------|----------------|
+| RSS fetch + Gemini summarize | ✅ | ✅ |
+| ADK multi-agent (stock-analysis) | ✅ | ✅ |
+| Cloud Run + Litestream + GEAP | ✅ | ✅ |
+| Single-tenant (你自己用) | ✅ | — |
+| **Multi-tenant + SSO** | — | ✅ |
+| **Audit log / compliance** | — | ✅ |
+| **Custom RAG plug-ins** (HISP/LISOC 級 ingestion) | — | ✅ |
+| **Slack / Teams adapter** | — | ✅ |
+| **SLA + on-call support** | — | ✅ |
+| **On-prem / 私有 LLM** (LeapCore Enterprise) | — | ✅ |
+
+### Want to try LeapCore Cloud / 商業合作
+
+- 📲 LINE OA: [`@rls8912s`](https://line.me/R/ti/p/@rls8912s) — JimmyLiao | Advocate
+- 💌 Email: `hi@leapdesign.ai`
+- 📚 Subscribe: [leapdesign.ai/zh/subscribe](https://leapdesign.ai/zh/subscribe)
+
+---
+
 ## Architecture
 
 ```
@@ -360,6 +389,35 @@ cat AGENTS.md
 
 > `CLAUDE.md` 和 `GEMINI.md` 都是 symlink 指向同一個 `AGENTS.md`，
 > 各 AI CLI 啟動時會自動載入對應的檔案。
+
+---
+
+## OSS vs. LeapCore Cloud — 這個 repo 涵蓋什麼？
+
+這個 repo 是 **個人 / Workshop demo**：單租戶、SQLite + Litestream、零維運。
+拿去跑、拿去學。
+
+當你的需求超出單人玩法，**LeapCore Cloud** 接手 — 多租戶 KM、audit log、
+SLA、客製 RAG plug-ins、企業 SSO。
+
+| 功能 | digest-agent OSS | LeapCore Cloud |
+|------|------------------|----------------|
+| RSS 抓取 + Gemini 摘要 | ✅ | ✅ |
+| ADK 多代理（個股分析） | ✅ | ✅ |
+| Cloud Run + Litestream + GEAP | ✅ | ✅ |
+| 單租戶（自己用） | ✅ | — |
+| **多租戶 + SSO** | — | ✅ |
+| **Audit log / 合規** | — | ✅ |
+| **客製 RAG plug-ins**（HISP/LISOC 級 ingestion） | — | ✅ |
+| **Slack / Teams adapter** | — | ✅ |
+| **SLA + on-call 支援** | — | ✅ |
+| **私有部署 / 私有 LLM**（LeapCore Enterprise） | — | ✅ |
+
+### 想試 LeapCore Cloud / 商業合作
+
+- 📲 LINE OA: [`@rls8912s`](https://line.me/R/ti/p/@rls8912s) — JimmyLiao | Advocate
+- 💌 Email: `hi@leapdesign.ai`
+- 📚 訂閱: [leapdesign.ai/zh/subscribe](https://leapdesign.ai/zh/subscribe)
 
 ---
 
