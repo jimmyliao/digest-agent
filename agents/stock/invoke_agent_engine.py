@@ -90,7 +90,7 @@ def main() -> None:
     print("─" * 60)
 
     client = vertexai.Client(project=project, location=location)
-    remote = client.agent_engines.get(resource)
+    remote = client.agent_engines.get(name=resource)
 
     async def run() -> None:
         n = 0
