@@ -10,6 +10,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+// localStorage cache so a browser refresh doesn't wipe the last analysis.
+// Stored as JSON: { query, events, savedAt }. TTL not enforced — cleared
+// manually via the "🗑 清除" button or when a new analysis starts.
+const CACHE_KEY = 'digest-stock-last-analysis-v1';
+
 interface AgentEvent {
   type: 'start' | 'event' | 'done' | 'error';
   engine?: string;
@@ -39,9 +44,43 @@ export default function StockAnalysisPage() {
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showDevTools, setShowDevTools] = useState(false);
+  const [restoredAt, setRestoredAt] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => () => abortRef.current?.abort(), []);
+  // Restore last analysis from localStorage on mount (no SSR access).
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' && window.localStorage.getItem(CACHE_KEY);
+      if (!raw) return;
+      const cached = JSON.parse(raw) as { query: string; events: AgentEvent[]; savedAt: string };
+      if (cached.events?.length) {
+        setQuery(cached.query ?? '');
+        setEvents(cached.events);
+        setRestoredAt(cached.savedAt);
+      }
+    } catch { /* ignore corrupt cache */ }
+    return () => abortRef.current?.abort();
+  }, []);
+
+  // Persist final state when analysis completes (running flips false with events).
+  useEffect(() => {
+    if (running) return;
+    if (!events.some(e => e.type === 'event')) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({ query, events, savedAt: new Date().toISOString() }),
+      );
+    } catch { /* quota / private mode → silently skip */ }
+  }, [running, events, query]);
+
+  function clearHistory() {
+    if (typeof window !== 'undefined') window.localStorage.removeItem(CACHE_KEY);
+    setEvents([]);
+    setRestoredAt(null);
+    setError(null);
+  }
 
   const finalText = events
     .filter(e => e.type === 'event')
@@ -53,6 +92,7 @@ export default function StockAnalysisPage() {
     setRunning(true);
     setEvents([]);
     setError(null);
+    setRestoredAt(null);
     abortRef.current = new AbortController();
     try {
       const resp = await fetch('/api/stock-chat', {
@@ -127,7 +167,31 @@ export default function StockAnalysisPage() {
         >
           {running ? '🤖 分析中...' : '🔍 開始分析'}
         </button>
+        {(events.length > 0 || restoredAt) && !running && (
+          <button
+            onClick={clearHistory}
+            title="清除瀏覽器快取的最後一次分析"
+            style={{
+              padding: '0.5rem 0.75rem', background: 'transparent',
+              color: '#6b7280', border: '1px solid #e5e7eb',
+              borderRadius: '0.375rem', cursor: 'pointer',
+              fontFamily: 'inherit', fontSize: '0.85rem',
+            }}
+          >
+            🗑 清除
+          </button>
+        )}
       </div>
+
+      {restoredAt && !running && (
+        <div style={{
+          marginBottom: '1rem', padding: '0.5rem 0.75rem',
+          background: '#fffbeb', border: '1px solid #fde68a',
+          borderRadius: '0.375rem', fontSize: '0.8rem', color: '#92400e',
+        }}>
+          📂 從 localStorage 還原上次分析（{new Date(restoredAt).toLocaleString('zh-TW')}）。再次按「開始分析」會覆蓋。
+        </div>
+      )}
 
       {running && (
         <div style={{
