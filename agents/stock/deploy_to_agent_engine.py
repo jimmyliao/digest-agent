@@ -148,7 +148,16 @@ def main() -> None:
             "display_name": "digest-agent-stock-analyzer",
             "identity_type": "AGENT_IDENTITY",  # use managed identity so engine can call internal aiplatform APIs (SessionService etc.)
             "env_vars": {
-                "GOOGLE_API_KEY": api_key,  # ADK uses GOOGLE_API_KEY for Gemini calls
+                # Tell internal vertexai client which project to operate in.
+                # Without these the engine's vertexai.Client() picks up wrong project
+                # context from metadata server → RESOURCE_PROJECT_INVALID at SessionService.CreateSession.
+                "GOOGLE_CLOUD_PROJECT": project,
+                "GOOGLE_CLOUD_LOCATION": location,
+                # Route Gemini calls through Vertex AI (managed identity) instead of AI Studio API key,
+                # so the engine doesn't need the personal API key at all.
+                "GOOGLE_GENAI_USE_VERTEXAI": "true",
+                # Keep API key as fallback for direct genai.Client() calls (older ADK paths)
+                "GOOGLE_API_KEY": api_key,
             },
         },
     )
