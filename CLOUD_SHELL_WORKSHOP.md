@@ -1,5 +1,14 @@
 # CLOUD_SHELL_WORKSHOP.md
-# AI 新聞小幫手工作坊 — Google Cloud Shell 版
+# AI 新聞小幫手工作坊 — Streamlit 路徑（**5/9 fallback / backup**）
+
+> ⚠️ **5/9 BwAI 台中 default = Next.js path**（見 [`WORKSHOP_NEXTJS.md`](./WORKSHOP_NEXTJS.md)，
+> 一行 `make workshop-verify` 完成 onboard + smoke）。
+>
+> 這份是 **fallback runbook** — 學員若在 Next.js 卡住（bun install 失敗、Cloud Run UI
+> 拉不起來、GEAP 沒部署成功等），用 Streamlit 路徑直接退回 Python only、port 8080，
+> 一樣能跑完 4-agent 個股分析。
+>
+> Streamlit 路徑經過 4/18 桃園 workshop 實戰、低工具鏈（uv only）— 是穩定的安全網。
 
 打開 Google Cloud Shell，輸入 `gemini` 進入 interactive mode，依序貼上 Magic Prompt。
 
