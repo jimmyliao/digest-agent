@@ -55,7 +55,24 @@ export async function POST(req: NextRequest) {
           message,
           req.signal,
         )) {
-          send({ type: 'event', ...event });
+          // Vertex AI returns events shaped as
+          //   { author, content: { role, parts: [...] }, ... }
+          // The page consumer expects parts at top level. Flatten so that
+          // event.parts is the array (preserving raw event under .raw for
+          // anyone who needs the original shape).
+          type RawEvent = {
+            author?: string;
+            content?: { role?: string; parts?: unknown[] };
+            [k: string]: unknown;
+          };
+          const e = event as RawEvent;
+          const parts = e.content?.parts ?? (Array.isArray((e as { parts?: unknown[] }).parts) ? (e as { parts?: unknown[] }).parts : []);
+          send({
+            type: 'event',
+            author: e.author,
+            role: e.content?.role,
+            parts,
+          });
         }
         send({ type: 'done' });
       } catch (err) {
