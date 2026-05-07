@@ -102,6 +102,12 @@ invoke-agent-engine:
 list-agent-engines:
 	./scripts/list-agent-engines.sh --filter digest-agent
 
+# Set up monthly billing budget alert (default $5 USD)
+# Usage: make setup-billing-alert            # $5
+#        AMOUNT=10 make setup-billing-alert  # $10
+setup-billing-alert:
+	./scripts/setup-billing-alert.sh $(AMOUNT)
+
 # ADK: launch web UI to test stock analysis agents interactively
 adk-web:
 	uv run adk web agents
