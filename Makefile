@@ -1,4 +1,4 @@
-.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run
+.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local
 
 ENV_FILE ?= .env
 WORKSPACE_ENV ?= $(HOME)/workspace/.env
@@ -135,3 +135,24 @@ init_db(); \
 orch = DigestOrchestrator(); \
 result = asyncio.run(orch.run_fetch_pipeline()); \
 print(result)"
+
+# Set up GCS bucket (gs://${GCP_PROJECT}-data) for Litestream-backed
+# Next.js apps/web/ SQLite persistence. Idempotent.
+# Usage: make setup-data-bucket
+setup-data-bucket:
+	@bash scripts/setup-data-bucket.sh
+
+# Deploy apps/web/ (Next.js + Litestream) to Cloud Run with GCS-backed
+# /data/digest.db. Reads LITESTREAM_GCS_BUCKET from .env.deploy.
+# Usage: make deploy-web
+deploy-web:
+	@bash scripts/deploy-web-to-cloud-run.sh
+
+# Run unit tests + bash lint locally (vitest + pytest + bash -n).
+# Usage: make test-local
+test-local:
+	@echo "🧪 Running unit tests + bash lint..."
+	cd apps/web && npm test
+	uv run pytest tests/ -v --no-header 2>&1 | tail -20
+	bash -n scripts/setup-data-bucket.sh scripts/deploy-web-to-cloud-run.sh infra/entrypoint.sh
+	@echo "✅ All local tests passed"

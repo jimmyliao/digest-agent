@@ -1,0 +1,2 @@
+*.sh text eol=lf
+infra/entrypoint.sh text eol=lf
