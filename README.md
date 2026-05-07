@@ -54,15 +54,16 @@ Cloud Shell shortcut (no setup): `make dev-shell` (port 8080 with Web Preview).
 ```bash
 git clone https://github.com/jimmyliao/digest-agent.git
 cd digest-agent
-make onboard-cloudshell                        # installs bun + uv, runs install
-vim apps/web/.env.local                        # set GEMINI_API_KEY
+make workshop-verify                           # onboard + smoke test (bun + uv + boot dev + curl /api/health)
+vim apps/web/.env.local                        # set GEMINI_API_KEY (only if you want real LLM calls)
 cd apps/web && bun run dev                     # http://localhost:3000
 ```
 
-`make onboard-cloudshell` is **idempotent** and works on Google Cloud Shell, macOS, Linux, WSL.
+`make workshop-verify` is **idempotent + green/red signal**: works on Google Cloud Shell, macOS, Linux, WSL. Just want to install (without the smoke test)? Use `make onboard-cloudshell`.
 
 For magic-prompt onboarding via Gemini CLI, see [WORKSHOP_NEXTJS.md](./WORKSHOP_NEXTJS.md).
 For Streamlit workshop magic prompts, see [CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md).
+For a catalog of every script (purpose + `make` wrapper), see [scripts/README.md](./scripts/README.md).
 
 **Alternative — use with AI Agent CLI:**
 
@@ -217,15 +218,37 @@ GEMINI_API_KEY=your-key make deploy-workshop
 
 ---
 
-## Deployment (Cloud Run — Production)
+## Deployment
+
+Three paths, pick what matches your workshop / showcase target.
+
+### Path A — Streamlit → Cloud Run
 
 ```bash
-# Requires gcloud CLI + secrets set up in Secret Manager
-make deploy
+make deploy            # Secret Manager: gemini-api-key, supabase-db-url
+# OR for the workshop quick-deploy (no Secret Manager):
+GEMINI_API_KEY=... make deploy-workshop
 ```
 
-Secrets expected: `gemini-api-key`, `supabase-db-url`
-See `.github/workflows/deploy.yml` for GitHub Actions CI/CD.
+### Path B — Next.js → Cloud Run with Litestream + GCS persistence
+
+```bash
+make setup-data-bucket   # one-time: GCS bucket for Litestream WAL replication
+make deploy-web          # Cloud Build (~3-5 min) → revision auto-rollout
+```
+
+`/data/digest.db` lives inside the container; Litestream replicates the WAL to GCS every 10s and restores on cold start. **Redeploys / restarts don't lose data.**
+
+### Path C — ADK Agents → Vertex AI Agent Engine (GEAP)
+
+```bash
+GCP_PROJECT=… STAGING_BUCKET=gs://… GEMINI_API_KEY=… make deploy-agent-engine
+make invoke-agent-engine    # smoke test the latest deployed engine
+```
+
+Hosts the Python `agents/stock/` SequentialAgent on Google's managed agent runtime. Cloud Run UI's `/api/stock-chat` calls this via SSE.
+
+> Pre-flight checks (billing enabled, ADC quota project, IAM, bucket region) run automatically; see `make help` for the full target list and [`scripts/README.md`](./scripts/README.md) for what each script does.
 
 ---
 
@@ -287,28 +310,35 @@ digest-agent/
 
 ## 快速開始
 
+> 兩條路徑，依目標選一條。
+
+### 🐍 Path A：Streamlit（5/9 GDG 工作坊推薦）
+
 ```bash
-# 1. Clone
 git clone https://github.com/jimmyliao/digest-agent.git
 cd digest-agent
-
-# 2. 安裝（需要 uv）
-uv sync --all-extras
-
-# 3. 設定環境變數
-cp .env.example .env
-# 編輯 .env，至少填入 GEMINI_API_KEY
-
-# 4. 啟動
-uv run streamlit run src/app.py --server.port=8080
-# 開啟 http://localhost:8080
+uv sync --all-extras                          # Python 依賴
+cp .env.example .env && vim .env              # 填入 GEMINI_API_KEY
+make dev                                       # http://localhost:8080
 ```
 
-或用 `make`：
+Cloud Shell 一鍵起：`make dev-shell`（port 8080，可開 Web Preview）。
+
+### ⚛️ Path B：Next.js（AIA showcase / 正式 demo 用）
+
 ```bash
-make install
-make dev     # 預設讀取 ENV_FILE=~/workspace/.env
+git clone https://github.com/jimmyliao/digest-agent.git
+cd digest-agent
+make workshop-verify                           # 安裝 bun + uv + 啟動 dev + curl /api/health
+vim apps/web/.env.local                        # 設 GEMINI_API_KEY（要呼叫真 LLM 才需要）
+cd apps/web && bun run dev                     # http://localhost:3000
 ```
+
+`make workshop-verify` **idempotent + 綠/紅 signal**：跑得過 macOS / Cloud Shell / Linux / WSL。只想裝環境不跑 smoke 用 `make onboard-cloudshell`。
+
+Magic-prompt 版（Gemini CLI 帶你裝）：[WORKSHOP_NEXTJS.md](./WORKSHOP_NEXTJS.md)。
+Streamlit Magic-prompt：[CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md)。
+所有 script 的用途總覽：[scripts/README.md](./scripts/README.md)。
 
 **也可以搭配 AI Agent CLI 使用：**
 
@@ -466,15 +496,37 @@ GEMINI_API_KEY=你的-key make deploy-workshop
 
 ---
 
-## 部署到 Cloud Run（正式環境）
+## 部署
+
+依目標選 path。
+
+### Path A — Streamlit → Cloud Run
 
 ```bash
-# 需要 gcloud CLI 且 Secret Manager 已設定好 secrets
-make deploy
+make deploy            # 需 Secret Manager 預先設好 gemini-api-key / supabase-db-url
+# 或 workshop 快速部署（不需要 Secret Manager）：
+GEMINI_API_KEY=... make deploy-workshop
 ```
 
-所需 secrets：`gemini-api-key`、`supabase-db-url`
-CI/CD 設定請參考 `.github/workflows/deploy.yml`。
+### Path B — Next.js → Cloud Run + Litestream + GCS 持久化
+
+```bash
+make setup-data-bucket   # 一次性：建好 Litestream 用的 GCS bucket
+make deploy-web          # Cloud Build（~3-5 分鐘）→ 自動 rollout 新 revision
+```
+
+`/data/digest.db` 在 container 內，Litestream 每 10 秒把 WAL replicate 到 GCS、cold start 自動 restore。**Redeploy / 重啟資料不會掉。**
+
+### Path C — ADK Agents → Vertex AI Agent Engine（GEAP）
+
+```bash
+GCP_PROJECT=… STAGING_BUCKET=gs://… GEMINI_API_KEY=… make deploy-agent-engine
+make invoke-agent-engine    # 部署後 smoke 一下最新 engine
+```
+
+把 Python `agents/stock/` SequentialAgent 部署到 Google 託管的 agent runtime；Cloud Run UI 的 `/api/stock-chat` SSE 串到這裡。
+
+> 部署前 pre-flight（billing、ADC quota project、IAM、bucket region）會自動檢查；`make help` 看完整 target 清單，[`scripts/README.md`](./scripts/README.md) 看每個 script 做什麼。
 
 ---
 

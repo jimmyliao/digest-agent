@@ -1,5 +1,7 @@
-.PHONY: help install dev dev-shell test lint build run deploy deploy-workshop shell clean adk-web adk-run \
+.PHONY: help help-scripts install dev dev-shell test lint build run deploy deploy-workshop shell clean adk-web adk-run debug \
         setup-data-bucket deploy-web \
+        deploy-agent-engine invoke-agent-engine list-agent-engines \
+        setup-billing-alert deploy-dry-run \
         test-local test-local-e2e test-local-api-real \
         onboard-cloudshell smoke-cloudshell workshop-verify
 
@@ -18,17 +20,24 @@ help:
 	@echo "  make test-local-api-real Real-API smoke (needs GEMINI_API_KEY)"
 	@echo ""
 	@echo "── Deploy (Cloud Run + GEAP) ──"
-	@echo "  make setup-data-bucket   Create GCS bucket for Litestream (one-time)"
-	@echo "  make deploy-web          Deploy apps/web (Next.js + Litestream) to Cloud Run"
-	@echo "  make deploy-agent-engine Deploy ADK agents to Vertex AI Agent Engine (GEAP)"
-	@echo "  make invoke-agent-engine Invoke deployed GEAP for a smoke run"
+	@echo "  make setup-data-bucket    Create GCS bucket for Litestream (one-time)"
+	@echo "  make setup-billing-alert  Monthly budget alarm (default \$$5; AMOUNT=N to override)"
+	@echo "  make deploy-web           Deploy apps/web (Next.js + Litestream) to Cloud Run"
+	@echo "  make deploy-agent-engine  Deploy ADK agents to Vertex AI Agent Engine (GEAP)"
+	@echo "  make invoke-agent-engine  Invoke deployed GEAP for a smoke run"
+	@echo "  make list-agent-engines   List Reasoning Engines in current GCP project"
 	@echo ""
 	@echo "── Local dev ──"
 	@echo "  make dev                 Streamlit local (loads .env)"
 	@echo "  make adk-web             ADK web UI to test agents/stock interactively"
 	@echo "  make shell               Drop into shell with .env loaded"
 	@echo ""
+	@echo "scripts/ catalog: see scripts/README.md (or 'make help-scripts')"
 	@echo "Run 'make <target>' or see Makefile for the full list."
+
+# Print the scripts catalog (renders scripts/README.md to terminal).
+help-scripts:
+	@cat scripts/README.md
 
 ENV_FILE ?= .env
 WORKSPACE_ENV ?= $(HOME)/workspace/.env
