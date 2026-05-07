@@ -93,6 +93,11 @@ deploy-agent-engine:
 	uv sync --extra geap
 	uv run python -m agents.stock.deploy_to_agent_engine
 
+# Invoke the latest deployed Agent Engine (reads deployed-agent-engines.txt last line)
+# Direct: ./scripts/invoke-agent-engine.sh "<message>"
+invoke-agent-engine:
+	./scripts/invoke-agent-engine.sh
+
 # ADK: launch web UI to test stock analysis agents interactively
 adk-web:
 	uv run adk web agents
