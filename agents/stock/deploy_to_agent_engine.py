@@ -78,6 +78,8 @@ def main() -> None:
                 "google-cloud-aiplatform[agent_engines,adk]>=1.112",
                 "google-adk>=1.0.0",
                 "google-genai>=1.0.0",
+                "pydantic",      # ADK uses pydantic models internally
+                "cloudpickle",   # agent_engines serializes the agent via cloudpickle
             ],
             "staging_bucket": bucket,
             "display_name": "digest-agent-stock-analyzer",
