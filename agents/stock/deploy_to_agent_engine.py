@@ -23,7 +23,44 @@ import os
 import sys
 
 
+def verify_local() -> None:
+    """Quick in-process check before paying for Cloud Build.
+
+    Catches: import errors, agent construction errors, basic AdkApp wrap.
+    Does NOT catch: deploy-time packaging issues (extra_packages),
+                    pip requirements completeness in deployed env.
+    """
+    print("🧪 Local verify mode — no GCP cost")
+    try:
+        from agents.stock.agent import root_agent
+        print(f"  ✅ Imported root_agent: {root_agent.name} ({type(root_agent).__name__})")
+    except Exception as e:
+        print(f"  ❌ Import failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        from vertexai import agent_engines
+        app = agent_engines.AdkApp(agent=root_agent)
+        print(f"  ✅ AdkApp wrapped OK: {type(app).__name__}")
+    except ImportError:
+        print(
+            "  ⚠️  vertexai SDK not installed (run: uv sync --extra geap)",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    except Exception as e:
+        print(f"  ❌ AdkApp wrap failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    print("✅ Local verify passed — agent is structurally sound.")
+    print("   Note: still need actual deploy to catch packaging / requirement gaps.")
+
+
 def main() -> None:
+    if "--verify-local" in sys.argv:
+        verify_local()
+        return
+
     project = os.environ.get("GCP_PROJECT")
     location = os.environ.get("GCP_LOCATION", "us-central1")
     bucket = os.environ.get("STAGING_BUCKET")
@@ -63,11 +100,11 @@ def main() -> None:
     console_base = "https://console.cloud.google.com"
     print(
         "\n📡 Monitor progress while you wait:\n"
-        f"  Cloud Build : {console_base}/cloud-build/builds?project={project}\n"
         f"  Staging bkt : {console_base}/storage/browser/{bucket_path}?project={project}\n"
-        "  Or run in another terminal:\n"
-        f"    gcloud builds list --project={project} --limit=3\n"
-        f"    gcloud builds log $(gcloud builds list --project={project} --limit=1 --format='value(id)') --project={project} --stream\n"
+        f"  Reasoning logs (live startup): {console_base}/logs/query;query=resource.type%3D%22aiplatform.googleapis.com%2FReasoningEngine%22?project={project}\n"
+        "  Or in another terminal:\n"
+        f"    gcloud logging read 'resource.type=\"aiplatform.googleapis.com/ReasoningEngine\"' --project={project} --limit=20 --freshness=10m\n"
+        "  (Note: Agent Engine builds run in a Vertex-internal pipeline, NOT your Cloud Build history.)\n"
     )
 
     print("🚀 Deploying to Agent Engine Runtime (3-5 min)...")
@@ -81,6 +118,7 @@ def main() -> None:
                 "pydantic",      # ADK uses pydantic models internally
                 "cloudpickle",   # agent_engines serializes the agent via cloudpickle
             ],
+            "extra_packages": ["agents"],   # include agents/ source tree so 'agents.stock.*' imports work in deployed env
             "staging_bucket": bucket,
             "display_name": "digest-agent-stock-analyzer",
             "env_vars": {
