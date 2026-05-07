@@ -145,13 +145,16 @@ def main() -> None:
     print(f"📝 Logged to {registry} (latest line = newest deploy)")
 
     # Clickable Console URLs (modern terminals auto-detect)
+    # Note: Vertex AI Console doesn't expose a deep-link to individual agent
+    # engines; use the list page and find your engine_id there.
     console_base = "https://console.cloud.google.com"
+    logs_query = f"resource.type%3D%22aiplatform.googleapis.com%2FReasoningEngine%22%20resource.labels.reasoning_engine_id%3D%22{engine_id}%22"
     print(
         "\n🔗 Console links:\n"
-        f"  Agent detail : {console_base}/vertex-ai/agents/locations/{location}/agent-engines/{engine_id}?project={project}\n"
-        f"  Cloud Build  : {console_base}/cloud-build/builds?project={project}\n"
-        f"  Logs         : {console_base}/logs/query;query=resource.type%3D%22aiplatform.googleapis.com%2FReasoningEngine%22?project={project}\n"
-        f"  Staging bkt  : {console_base}/storage/browser/{bucket.removeprefix('gs://')}?project={project}\n"
+        f"  Agent Engines list : {console_base}/vertex-ai/agents/agent-engines?project={project}\n"
+        f"    → engine_id to find: {engine_id}\n"
+        f"  Logs (this engine) : {console_base}/logs/query;query={logs_query}?project={project}\n"
+        f"  Staging bucket     : {console_base}/storage/browser/{bucket.removeprefix('gs://')}?project={project}\n"
     )
 
     print(
