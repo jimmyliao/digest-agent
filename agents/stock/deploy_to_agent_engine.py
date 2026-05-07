@@ -125,8 +125,9 @@ def main() -> None:
             "extra_packages": ["agents"],   # include agents/ source tree so 'agents.stock.*' imports work in deployed env
             "staging_bucket": bucket,
             "display_name": "digest-agent-stock-analyzer",
+            "identity_type": "AGENT_IDENTITY",  # use managed identity so engine can call internal aiplatform APIs (SessionService etc.)
             "env_vars": {
-                "GOOGLE_API_KEY": api_key,  # ADK uses GOOGLE_API_KEY
+                "GOOGLE_API_KEY": api_key,  # ADK uses GOOGLE_API_KEY for Gemini calls
             },
         },
     )
