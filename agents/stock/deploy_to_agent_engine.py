@@ -61,6 +61,10 @@ def main() -> None:
         verify_local()
         return
 
+    # Always run local verify before paying for Cloud Build
+    verify_local()
+    print()
+
     project = os.environ.get("GCP_PROJECT")
     location = os.environ.get("GCP_LOCATION", "us-central1")
     bucket = os.environ.get("STAGING_BUCKET")
