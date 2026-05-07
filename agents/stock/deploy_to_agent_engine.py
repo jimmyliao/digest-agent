@@ -119,6 +119,14 @@ def main() -> None:
             e.delete(force=True)
         print()
 
+    digest_api_url = os.environ.get("DIGEST_API_URL")
+    if not digest_api_url:
+        print(
+            "⚠️  DIGEST_API_URL not set — agent will fall back to local SQLite "
+            "(deployed engine likely has empty DB)",
+            file=sys.stderr,
+        )
+
     app = agent_engines.AdkApp(agent=root_agent)
 
     bucket_path = bucket.removeprefix("gs://")
@@ -150,6 +158,27 @@ def main() -> None:
     ticker = threading.Thread(target=_ticker, daemon=True)
     ticker.start()
 
+    env_vars = {
+        # GEAP auto-injects GOOGLE_CLOUD_PROJECT / GOOGLE_CLOUD_LOCATION
+        # (they're reserved). Setting them here triggers FAILED_PRECONDITION.
+        #
+        # Route Gemini calls through Vertex AI (uses managed service account)
+        # instead of AI Studio API key. Without this, GOOGLE_API_KEY in env
+        # can pollute the genai client into API-key auth mode, which then
+        # breaks SessionService.CreateSession with RESOURCE_PROJECT_INVALID.
+        "GOOGLE_GENAI_USE_VERTEXAI": "true",
+        # Auto-enable telemetry (Console dashboard 'agent request count' /
+        # latency / errors). Free tier 2.5M spans/month covers our usage.
+        # SDK default is 'unspecified' → no metrics. Explicit 'true' opts in.
+        "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
+        # API key is no longer needed when GOOGLE_GENAI_USE_VERTEXAI=true
+        # — engine uses its managed SA for both Gemini and SessionService.
+    }
+    if digest_api_url:
+        # Inject so deployed agent uses HTTP fallback against the digest-agent
+        # web API instead of an empty local SQLite DB.
+        env_vars["DIGEST_API_URL"] = digest_api_url
+
     try:
         remote = client.agent_engines.create(
             agent=app,
@@ -165,22 +194,7 @@ def main() -> None:
                 "staging_bucket": bucket,
                 "display_name": "digest-agent-stock-analyzer",
                 "identity_type": "AGENT_IDENTITY",  # use managed identity so engine can call internal aiplatform APIs (SessionService etc.)
-                "env_vars": {
-                    # GEAP auto-injects GOOGLE_CLOUD_PROJECT / GOOGLE_CLOUD_LOCATION
-                    # (they're reserved). Setting them here triggers FAILED_PRECONDITION.
-                    #
-                    # Route Gemini calls through Vertex AI (uses managed service account)
-                    # instead of AI Studio API key. Without this, GOOGLE_API_KEY in env
-                    # can pollute the genai client into API-key auth mode, which then
-                    # breaks SessionService.CreateSession with RESOURCE_PROJECT_INVALID.
-                    "GOOGLE_GENAI_USE_VERTEXAI": "true",
-                    # Auto-enable telemetry (Console dashboard 'agent request count' /
-                    # latency / errors). Free tier 2.5M spans/month covers our usage.
-                    # SDK default is 'unspecified' → no metrics. Explicit 'true' opts in.
-                    "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
-                    # API key is no longer needed when GOOGLE_GENAI_USE_VERTEXAI=true
-                    # — engine uses its managed SA for both Gemini and SessionService.
-                },
+                "env_vars": env_vars,
             },
         )
     finally:

@@ -5,10 +5,15 @@ Phase 1-3 Fetch 和 Phase 4 個股分析共用同一組財經來源。
 """
 
 import asyncio
+import logging
+import os
 from pathlib import Path
 from typing import Optional
 
+import requests
 import yaml
+
+logger = logging.getLogger(__name__)
 
 
 def _load_finance_sources() -> list[dict]:
@@ -52,6 +57,10 @@ def search_db_articles(company_name: str, ticker: str = "", limit: int = 10) -> 
     """從 DB 搜尋已抓取的文章（Phase 1-3 Fetch 存入的資料）。
     這是最快的方式，因為資料已經在本地 DB，不需要重新抓取 RSS。
 
+    若環境變數 DIGEST_API_URL 有設定，先嘗試 HTTP 模式呼叫 remote
+    `/api/articles` endpoint；失敗（5xx / timeout / network error）時
+    自動 fallback 至本地 SQLite。
+
     Args:
         company_name: 公司名稱（例如「台積電」）
         ticker: 選填的股票代號（例如 "2330"）
@@ -60,6 +69,66 @@ def search_db_articles(company_name: str, ticker: str = "", limit: int = 10) -> 
     Returns:
         包含搜尋結果的字典
     """
+    api_url = os.environ.get("DIGEST_API_URL")
+    using_http = bool(api_url)
+    if using_http:
+        print("[search_db_articles] mode=HTTP")
+    else:
+        print("[search_db_articles] mode=SQLite (local_db)")
+
+    if using_http:
+        try:
+            resp = requests.get(
+                f"{api_url.rstrip('/')}/api/articles",
+                params={"company": company_name, "limit": limit},
+                timeout=10,
+            )
+            if 200 <= resp.status_code < 300:
+                payload = resp.json()
+                remote_articles = payload.get("articles", []) or []
+                # Normalize remote schema to our return schema
+                normalized = []
+                for a in remote_articles:
+                    content = a.get("content") or ""
+                    summary = a.get("summary") or ""
+                    normalized.append(
+                        {
+                            "title": a.get("title"),
+                            "source": a.get("source"),
+                            "url": a.get("source_url") or a.get("url"),
+                            "published_at": a.get("published_at"),
+                            "snippet": content[:300] if content else "",
+                            "has_summary": bool(summary),
+                            "summary_preview": summary[:200] if summary else None,
+                        }
+                    )
+                total_in_db = payload.get("count", len(normalized))
+                return {
+                    "status": "success",
+                    "source": "remote_api",
+                    "company": company_name,
+                    "ticker": ticker,
+                    "articles": normalized,
+                    "total_matched": len(normalized),
+                    "total_in_db": total_in_db,
+                }
+            else:
+                logger.warning(
+                    "DIGEST_API_URL returned status %s; falling back to local SQLite",
+                    resp.status_code,
+                )
+        except requests.Timeout:
+            logger.warning("DIGEST_API_URL request timed out; falling back to local SQLite")
+        except requests.RequestException as e:
+            logger.warning(
+                "DIGEST_API_URL request failed (%s); falling back to local SQLite", e
+            )
+        except Exception as e:  # JSON parse or unexpected
+            logger.warning(
+                "DIGEST_API_URL response handling failed (%s); falling back to local SQLite",
+                e,
+            )
+
     from src.models.database import SessionLocal, ArticleDB
 
     keywords = [company_name]
