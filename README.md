@@ -35,21 +35,9 @@ No backend server required — everything runs in a single Python process.
 
 ## Quick Start
 
-> Two parallel paths — pick one based on your goal.
+> Two parallel paths — Next.js is the **5/9 default**; Streamlit is the **fallback / backup** runbook.
 
-### 🐍 Path A: Streamlit (recommended for the 5/9 GDG workshop)
-
-```bash
-git clone https://github.com/jimmyliao/digest-agent.git
-cd digest-agent
-uv sync --all-extras                          # Python deps
-cp .env.example .env && vim .env              # set GEMINI_API_KEY
-make dev                                       # http://localhost:8080
-```
-
-Cloud Shell shortcut (no setup): `make dev-shell` (port 8080 with Web Preview).
-
-### ⚛️ Path B: Next.js (for AIA showcase / production-style demo)
+### ⚛️ Path A: Next.js (5/9 BwAI 台中 default + AIA showcase)
 
 ```bash
 git clone https://github.com/jimmyliao/digest-agent.git
@@ -60,6 +48,18 @@ cd apps/web && bun run dev                     # http://localhost:3000
 ```
 
 `make workshop-verify` is **idempotent + green/red signal**: works on Google Cloud Shell, macOS, Linux, WSL. Just want to install (without the smoke test)? Use `make onboard-cloudshell`.
+
+### 🐍 Path B: Streamlit (fallback / backup if Next.js path stalls)
+
+```bash
+git clone https://github.com/jimmyliao/digest-agent.git
+cd digest-agent
+uv sync --all-extras                          # Python deps only — no bun, no workspace
+cp .env.example .env && vim .env              # set GEMINI_API_KEY
+make dev                                       # http://localhost:8080
+```
+
+Cloud Shell shortcut (no setup): `make dev-shell` (port 8080 with Web Preview). Battle-tested at the 4/18 桃園 workshop — keep it as your safety net.
 
 For magic-prompt onboarding via Gemini CLI, see [WORKSHOP_NEXTJS.md](./WORKSHOP_NEXTJS.md).
 For Streamlit workshop magic prompts, see [CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md).
@@ -310,21 +310,9 @@ digest-agent/
 
 ## 快速開始
 
-> 兩條路徑，依目標選一條。
+> 兩條路徑 — Next.js 是 **5/9 預設主軸**，Streamlit 是 **備援 / fallback runbook**。
 
-### 🐍 Path A：Streamlit（5/9 GDG 工作坊推薦）
-
-```bash
-git clone https://github.com/jimmyliao/digest-agent.git
-cd digest-agent
-uv sync --all-extras                          # Python 依賴
-cp .env.example .env && vim .env              # 填入 GEMINI_API_KEY
-make dev                                       # http://localhost:8080
-```
-
-Cloud Shell 一鍵起：`make dev-shell`（port 8080，可開 Web Preview）。
-
-### ⚛️ Path B：Next.js（AIA showcase / 正式 demo 用）
+### ⚛️ Path A：Next.js（5/9 BwAI 台中 預設 + AIA showcase）
 
 ```bash
 git clone https://github.com/jimmyliao/digest-agent.git
@@ -335,6 +323,18 @@ cd apps/web && bun run dev                     # http://localhost:3000
 ```
 
 `make workshop-verify` **idempotent + 綠/紅 signal**：跑得過 macOS / Cloud Shell / Linux / WSL。只想裝環境不跑 smoke 用 `make onboard-cloudshell`。
+
+### 🐍 Path B：Streamlit（Next.js 卡關時的 fallback）
+
+```bash
+git clone https://github.com/jimmyliao/digest-agent.git
+cd digest-agent
+uv sync --all-extras                          # 純 Python 依賴，沒 bun、沒 workspace
+cp .env.example .env && vim .env              # 填入 GEMINI_API_KEY
+make dev                                       # http://localhost:8080
+```
+
+Cloud Shell 一鍵起：`make dev-shell`（port 8080，可開 Web Preview）。4/18 桃園 workshop 實戰過 — 留作安全網。
 
 Magic-prompt 版（Gemini CLI 帶你裝）：[WORKSHOP_NEXTJS.md](./WORKSHOP_NEXTJS.md)。
 Streamlit Magic-prompt：[CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md)。
