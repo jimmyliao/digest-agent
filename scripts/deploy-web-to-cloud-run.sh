@@ -215,8 +215,9 @@ echo ""
 
 # ── Confirm before spend ───────────────────────────────────────────────────
 echo "⚠️  This will:"
-echo "   1. gcloud run deploy --source apps/web/  (~3-5 min Cloud Build)"
-echo "   2. Create/update service: $SERVICE_NAME in $GCP_LOCATION"
+echo "   1. Cloud Build via cloudbuild.web.yaml (repo-root context, ~3-5 min)"
+echo "      → builds apps/web/Dockerfile which needs infra/ + packages/ from root"
+echo "   2. gcloud run deploy --image to $SERVICE_NAME in $GCP_LOCATION"
 echo "   3. Inject env: LITESTREAM_GCS_BUCKET=$LITESTREAM_GCS_BUCKET"
 echo "                  DATABASE_URL=file:/data/digest.db"
 echo ""
@@ -226,13 +227,38 @@ case "$ans" in
   *) echo "Aborted."; exit 0 ;;
 esac
 
-# ── Deploy ─────────────────────────────────────────────────────────────────
+# ── Ensure Artifact Registry repo exists ──────────────────────────────────
+AR_REPO="${AR_REPO:-cloud-run-source-deploy}"
+if ! gcloud artifacts repositories describe "$AR_REPO" \
+      --location="$GCP_LOCATION" --project="$GCP_PROJECT" >/dev/null 2>&1; then
+  echo "📦 Creating Artifact Registry repo: $AR_REPO ($GCP_LOCATION)..."
+  gcloud artifacts repositories create "$AR_REPO" \
+    --repository-format=docker \
+    --location="$GCP_LOCATION" \
+    --project="$GCP_PROJECT" \
+    --quiet
+fi
+
+IMAGE="${GCP_LOCATION}-docker.pkg.dev/${GCP_PROJECT}/${AR_REPO}/${SERVICE_NAME}:$(date +%Y%m%d-%H%M%S)"
+echo "🏷  Image: $IMAGE"
+echo ""
+
+# ── Build via Cloud Build (repo root context, custom Dockerfile path) ─────
+echo "🏗  Building image via Cloud Build (cloudbuild.web.yaml)..."
+gcloud builds submit \
+  --config cloudbuild.web.yaml \
+  --substitutions "_IMAGE=$IMAGE" \
+  --project "$GCP_PROJECT" \
+  --quiet \
+  .
+
+# ── Deploy to Cloud Run ────────────────────────────────────────────────────
 echo ""
 echo "🚀 Deploying $SERVICE_NAME..."
 echo ""
 
 gcloud run deploy "$SERVICE_NAME" \
-  --source apps/web/ \
+  --image "$IMAGE" \
   --region "$GCP_LOCATION" \
   --project "$GCP_PROJECT" \
   --allow-unauthenticated \
