@@ -6,14 +6,13 @@
  * Streams agent events from the deployed GEAP reasoning engine via
  * /api/stock-chat (SSE). Renders a per-agent timeline plus the final
  * report (concatenated text from all model turns).
+ *
+ * History is persisted server-side via /api/stock-history (was localStorage).
+ * Mount restore = fetch latest run; persist = POST after `done` event with
+ * dedup guard so re-renders don't double-write.
  */
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-
-// localStorage cache so a browser refresh doesn't wipe the last analysis.
-// Stored as JSON: { query, events, savedAt }. TTL not enforced — cleared
-// manually via the "🗑 清除" button or when a new analysis starts.
-const CACHE_KEY = 'digest-stock-last-analysis-v1';
 
 interface AgentEvent {
   type: 'start' | 'event' | 'done' | 'error';
@@ -34,6 +33,12 @@ interface AgentEvent {
   duration_ms?: number;
 }
 
+interface HistoryItem {
+  id: number;
+  query: string;
+  created_at: string;
+}
+
 const AGENT_ICONS: Record<string, string> = {
   news_collector: '📰',
   industry_analyst: '🏭',
@@ -49,41 +54,89 @@ export default function StockAnalysisPage() {
   const [error, setError] = useState<string | null>(null);
   const [showDevTools, setShowDevTools] = useState(false);
   const [restoredAt, setRestoredAt] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  // Dedup guard: prevents double-POST when the events array updates
+  // post-`done` (final React commit, etc.). Key is `query::duration_ms`.
+  const savedKeyRef = useRef<string | null>(null);
 
-  // Restore last analysis from localStorage on mount (no SSR access).
+  // Restore last analysis from server on mount.
   useEffect(() => {
-    try {
-      const raw = typeof window !== 'undefined' && window.localStorage.getItem(CACHE_KEY);
-      if (!raw) return;
-      const cached = JSON.parse(raw) as { query: string; events: AgentEvent[]; savedAt: string };
-      if (cached.events?.length) {
-        setQuery(cached.query ?? '');
-        setEvents(cached.events);
-        setRestoredAt(cached.savedAt);
-      }
-    } catch { /* ignore corrupt cache */ }
+    fetch('/api/stock-history?limit=1')
+      .then(r => (r.ok ? r.json() : { items: [] }))
+      .then(({ items }) => {
+        if (!items?.length) return null;
+        const item = items[0];
+        return fetch(`/api/stock-history/${item.id}`).then(r => r.json());
+      })
+      .then(full => {
+        if (!full?.events) return;
+        setQuery(full.query);
+        setEvents(full.events);
+        setRestoredAt(full.created_at);
+        // Mark as already-saved so we don't re-POST a restored run.
+        const done = (full.events as AgentEvent[]).find(e => e.type === 'done');
+        if (done) {
+          savedKeyRef.current = `${full.query}::${done.duration_ms ?? 0}`;
+        }
+      })
+      .catch(() => {
+        /* swallow — empty state is fine */
+      });
     return () => abortRef.current?.abort();
   }, []);
 
-  // Persist final state when analysis completes (running flips false with events).
+  // Refetch history list (drop-down) on mount + after each run completes.
   useEffect(() => {
     if (running) return;
-    if (!events.some(e => e.type === 'event')) return;
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({ query, events, savedAt: new Date().toISOString() }),
-      );
-    } catch { /* quota / private mode → silently skip */ }
+    fetch('/api/stock-history?limit=20')
+      .then(r => (r.ok ? r.json() : { items: [] }))
+      .then(d => setHistory(d.items ?? []))
+      .catch(() => { /* non-fatal */ });
+  }, [running]);
+
+  // Persist final state when analysis completes.
+  useEffect(() => {
+    if (running) return;
+    const done = events.find(e => e.type === 'done');
+    if (!done) return;
+    const key = `${query}::${done.duration_ms ?? 0}`;
+    if (savedKeyRef.current === key) return;
+    savedKeyRef.current = key;
+    fetch('/api/stock-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        events,
+        llm_calls: done.llm_calls,
+        tool_calls: done.tool_calls,
+        duration_ms: done.duration_ms,
+      }),
+    }).catch(() => { /* non-fatal */ });
   }, [running, events, query]);
 
   function clearHistory() {
-    if (typeof window !== 'undefined') window.localStorage.removeItem(CACHE_KEY);
     setEvents([]);
     setRestoredAt(null);
     setError(null);
+    savedKeyRef.current = null;
+  }
+
+  async function loadHistoryItem(id: number) {
+    if (!id) return;
+    try {
+      const full = await fetch(`/api/stock-history/${id}`).then(r => r.json());
+      if (full?.events) {
+        setQuery(full.query);
+        setEvents(full.events);
+        setRestoredAt(full.created_at);
+        const done = (full.events as AgentEvent[]).find(e => e.type === 'done');
+        savedKeyRef.current = done ? `${full.query}::${done.duration_ms ?? 0}` : null;
+      }
+    } catch {
+      /* non-fatal */
+    }
   }
 
   // Memoized so typing in the input box doesn't re-flatMap on every keystroke.
@@ -113,6 +166,7 @@ export default function StockAnalysisPage() {
     setEvents([]);
     setError(null);
     setRestoredAt(null);
+    savedKeyRef.current = null;
     abortRef.current = new AbortController();
     try {
       const resp = await fetch('/api/stock-chat', {
@@ -174,6 +228,27 @@ export default function StockAnalysisPage() {
             fontFamily: 'inherit',
           }}
         />
+        {history.length > 0 && (
+          <select
+            onChange={e => loadHistoryItem(Number(e.target.value))}
+            disabled={running}
+            defaultValue=""
+            style={{
+              padding: '0.5rem', border: '1px solid #e5e7eb',
+              borderRadius: '0.375rem', fontSize: '0.85rem',
+              fontFamily: 'inherit', background: 'white',
+            }}
+          >
+            <option value="">📂 歷史 ({history.length})</option>
+            {history.map(h => (
+              <option key={h.id} value={h.id}>
+                {new Date(h.created_at).toLocaleString('zh-TW', {
+                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                })} — {h.query.slice(0, 25)}
+              </option>
+            ))}
+          </select>
+        )}
         <button
           onClick={handleSubmit}
           disabled={running || !query.trim()}
@@ -190,7 +265,7 @@ export default function StockAnalysisPage() {
         {(events.length > 0 || restoredAt) && !running && (
           <button
             onClick={clearHistory}
-            title="清除瀏覽器快取的最後一次分析"
+            title="清除目前畫面（伺服器歷史保留）"
             style={{
               padding: '0.5rem 0.75rem', background: 'transparent',
               color: '#6b7280', border: '1px solid #e5e7eb',
@@ -209,7 +284,7 @@ export default function StockAnalysisPage() {
           background: '#fffbeb', border: '1px solid #fde68a',
           borderRadius: '0.375rem', fontSize: '0.8rem', color: '#92400e',
         }}>
-          📂 從 localStorage 還原上次分析（{new Date(restoredAt).toLocaleString('zh-TW')}）。再次按「開始分析」會覆蓋。
+          📂 從伺服器還原上次分析（{new Date(restoredAt).toLocaleString('zh-TW')}）。再次按「開始分析」會新增一筆。
         </div>
       )}
 
