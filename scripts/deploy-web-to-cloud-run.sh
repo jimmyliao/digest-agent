@@ -257,11 +257,17 @@ echo ""
 echo "🚀 Deploying $SERVICE_NAME..."
 echo ""
 
-# Build the env-vars list. Use gcloud's `^|^` custom-delimiter syntax so values
-# may freely contain commas (e.g. an LLM key, password, or comma-separated
-# config) — the standard `,` delimiter would silently split a value containing
-# `,` into multiple env vars or break the deploy.
-#   See: https://cloud.google.com/sdk/gcloud/reference/topic/escaping
+# Build the env-vars list. Two design choices worth knowing:
+#   1. `^|^` custom delimiter — values may contain commas freely (default `,`
+#      splits e.g. an LLM key or comma-separated config silently). See
+#      https://cloud.google.com/sdk/gcloud/reference/topic/escaping
+#   2. `--update-env-vars` (NOT `--set-env-vars`) — `--set-env-vars` REPLACES
+#      the entire env on the service every deploy, which means any var not
+#      listed here gets DROPPED. That bites students who set vars from
+#      Console / manual gcloud previously, or have an evolving .env.deploy.
+#      `--update-env-vars` merges, so listed keys are upserted and the rest
+#      are preserved. Use `gcloud run services update --remove-env-vars` if
+#      you genuinely need to remove a key.
 ENV_VARS="^|^LITESTREAM_GCS_BUCKET=$LITESTREAM_GCS_BUCKET|DATABASE_URL=file:/data/digest.db"
 [[ -n "${GEAP_RESOURCE_NAME:-}" ]]   && ENV_VARS="$ENV_VARS|GEAP_RESOURCE_NAME=$GEAP_RESOURCE_NAME"
 [[ -n "${BASIC_AUTH_USER:-}" ]]      && ENV_VARS="$ENV_VARS|BASIC_AUTH_USER=$BASIC_AUTH_USER"
@@ -274,7 +280,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --region "$GCP_LOCATION" \
   --project "$GCP_PROJECT" \
   --allow-unauthenticated \
-  --set-env-vars "$ENV_VARS" \
+  --update-env-vars "$ENV_VARS" \
   --memory 1Gi \
   --cpu 1 \
   --quiet
