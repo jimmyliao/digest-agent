@@ -81,6 +81,33 @@ deploy-workshop:
 	  --set-env-vars "GEMINI_API_KEY=$(GEMINI_API_KEY)" \
 	  --set-env-vars "DATABASE_URL=sqlite:////tmp/digest.db"
 
+# GEAP / Vertex AI Agent Engine: deploy agents/stock SequentialAgent as managed agent
+# Usage: GCP_PROJECT=xxx STAGING_BUCKET=gs://xxx GEMINI_API_KEY=xxx make deploy-agent-engine
+# See GEAP_DEPLOY.md for prerequisites (gcloud auth, IAM, APIs, bucket).
+deploy-agent-engine:
+	@if [ -z "$(GCP_PROJECT)" ] || [ -z "$(STAGING_BUCKET)" ] || [ -z "$(GEMINI_API_KEY)" ]; then \
+	  echo "❌ Missing env vars. Usage:"; \
+	  echo "   GCP_PROJECT=xxx STAGING_BUCKET=gs://xxx GEMINI_API_KEY=xxx make deploy-agent-engine"; \
+	  exit 1; \
+	fi
+	uv sync --extra geap
+	uv run python -m agents.stock.deploy_to_agent_engine
+
+# Invoke the latest deployed Agent Engine (reads deployed-agent-engines.txt last line)
+# Direct: ./scripts/invoke-agent-engine.sh "<message>"
+invoke-agent-engine:
+	./scripts/invoke-agent-engine.sh
+
+# List Agent Engines deployed to GCP project (filter by display_name prefix)
+list-agent-engines:
+	./scripts/list-agent-engines.sh --filter digest-agent
+
+# Set up monthly billing budget alert (default $5 USD)
+# Usage: make setup-billing-alert            # $5
+#        AMOUNT=10 make setup-billing-alert  # $10
+setup-billing-alert:
+	./scripts/setup-billing-alert.sh $(AMOUNT)
+
 # ADK: launch web UI to test stock analysis agents interactively
 adk-web:
 	uv run adk web agents
