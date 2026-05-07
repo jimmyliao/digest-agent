@@ -1,11 +1,13 @@
 # Next.js Workshop — Magic Prompts for Gemini CLI on Google Cloud Shell
 
-Companion to `CLOUD_SHELL_WORKSHOP.md` (which targets the **Streamlit** path).
-This file is the **Next.js (TypeScript)** path students follow when the
-workshop track is the Cloud Run UI + Litestream + GEAP showcase.
+The **5/9 BwAI 台中 default path**: Cloud Run UI + Litestream + GEAP showcase.
+Pair with `CLOUD_SHELL_WORKSHOP.md` (the Streamlit path), which is the
+**fallback / backup plan** if a student gets stuck on the Next.js
+toolchain (bun install, etc.) or on workshop day if Cloud Run / GEAP
+goes sideways.
 
-> 5/9 workshop default = Streamlit. This Next.js track is **stretch / advanced**
-> for students who finished early or want the production-style demo.
+> Quick start: `make workshop-verify` (one-shot install + smoke).
+> See Magic Prompt 0 below.
 
 ## Pre-requisite
 
@@ -177,7 +179,7 @@ gemini -p "@GEMINI.md Cloud Run UI 已部署（URL=https://...）。
 | 個股分析 | `4_stock_analysis.py` 跑 in-process Python ADK，要 `GEMINI_API_KEY` | `/stock-analysis` 透過 Vertex AI 打 GEAP（要先部署 agent runtime） |
 | Auth | 無 | HTTP Basic Auth（local dev 用 `BASIC_AUTH_DISABLED=1` 跳過） |
 | 持久化 | 預設 `/tmp/digest.db`（ephemeral，workshop 教學用） | Litestream + GCS（Cloud Run 重啟保留所有狀態） |
-| 教學用途 | 5/9 workshop **預設路徑** | 5/9 stretch / 5/18 AIA showcase |
+| 教學用途 | 5/9 **fallback / backup** path | 5/9 **default** + 5/18 AIA showcase |
 
 ---
 
@@ -195,7 +197,7 @@ gemini -p "@GEMINI.md Cloud Run UI 已部署（URL=https://...）。
 
 ## See also
 
-- [`CLOUD_SHELL_WORKSHOP.md`](./CLOUD_SHELL_WORKSHOP.md) — Streamlit path (5/9 workshop default)
+- [`CLOUD_SHELL_WORKSHOP.md`](./CLOUD_SHELL_WORKSHOP.md) — Streamlit path (5/9 **fallback / backup**)
 - [`PERSISTENCE.md`](./PERSISTENCE.md) — Litestream + GCS architecture
 - [`GEAP_DEPLOY.md`](./GEAP_DEPLOY.md) — GEAP agent runtime deployment
 - [`scripts/README.md`](./scripts/README.md) — catalog of every script + its `make` wrapper
