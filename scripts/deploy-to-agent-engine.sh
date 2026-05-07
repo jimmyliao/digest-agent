@@ -212,11 +212,22 @@ echo "   2. Upload agent tarball to $STAGING_BUCKET"
 echo "   3. Trigger Cloud Build (~3-5 min)"
 echo "   4. Register Reasoning Engine on Agent Engine Runtime"
 echo ""
-read -r -p "Continue? [y/N] " ans
-case "$ans" in
-  [yY]|[yY][eE][sS]) ;;
-  *) echo "Aborted."; exit 0 ;;
-esac
+# Auto-proceed when stdin is non-interactive (CI, gcloud cloud-shell ssh,
+# `make deploy-agent-engine > log.txt 2>&1 &`) or when CONFIRM_DEPLOY is set.
+# Otherwise prompt as before. Same pattern as scripts/deploy-web-to-cloud-run.sh.
+if [[ ! -t 0 ]]; then
+  echo "ℹ️  stdin not a terminal — auto-proceeding (set CONFIRM_DEPLOY=n to abort)"
+  [[ "${CONFIRM_DEPLOY:-y}" == "n" ]] && { echo "Aborted (CONFIRM_DEPLOY=n)."; exit 0; }
+elif [[ -n "${CONFIRM_DEPLOY:-}" ]]; then
+  echo "ℹ️  CONFIRM_DEPLOY=${CONFIRM_DEPLOY} — skipping prompt"
+  case "$CONFIRM_DEPLOY" in [yY]|[yY][eE][sS]) ;; *) echo "Aborted."; exit 0 ;; esac
+else
+  read -r -p "Continue? [y/N] " ans
+  case "$ans" in
+    [yY]|[yY][eE][sS]) ;;
+    *) echo "Aborted."; exit 0 ;;
+  esac
+fi
 
 # ── Execute deploy via Makefile ────────────────────────────────────────────
 GCP_PROJECT="$GCP_PROJECT" \
