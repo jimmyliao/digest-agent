@@ -59,6 +59,17 @@ def main() -> None:
     client = vertexai.Client(project=project, location=location)
     app = agent_engines.AdkApp(agent=root_agent)
 
+    bucket_path = bucket.removeprefix("gs://")
+    console_base = "https://console.cloud.google.com"
+    print(
+        "\n📡 Monitor progress while you wait:\n"
+        f"  Cloud Build : {console_base}/cloud-build/builds?project={project}\n"
+        f"  Staging bkt : {console_base}/storage/browser/{bucket_path}?project={project}\n"
+        "  Or run in another terminal:\n"
+        f"    gcloud builds list --project={project} --limit=3\n"
+        f"    gcloud builds log $(gcloud builds list --project={project} --limit=1 --format='value(id)') --project={project} --stream\n"
+    )
+
     print("🚀 Deploying to Agent Engine Runtime (3-5 min)...")
     remote = client.agent_engines.create(
         agent=app,
