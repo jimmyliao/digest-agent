@@ -1,4 +1,4 @@
-.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local test-local-e2e
+.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local test-local-e2e test-local-api-real
 
 ENV_FILE ?= .env
 WORKSPACE_ENV ?= $(HOME)/workspace/.env
@@ -163,3 +163,13 @@ test-local:
 # Usage: make test-local-e2e
 test-local-e2e:
 	@bash scripts/test-local-e2e.sh
+
+# Real-API smoke against an already-running dev server. Hits every
+# /api/* endpoint with REAL data (real RSS, real LLM call). Requires
+# GEMINI_API_KEY. Skips publish by default — pass --with-publish to
+# include real channel sends.
+# Usage:
+#   make test-local-api-real
+#   make test-local-api-real ARGS=--with-publish
+test-local-api-real:
+	@bash scripts/test-local-api-real.sh $(ARGS)
