@@ -518,6 +518,9 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "ruff" },
 ]
+geap = [
+    { name = "google-cloud-aiplatform", extra = ["adk", "agent-engines"] },
+]
 
 [package.metadata]
 requires-dist = [
@@ -525,6 +528,7 @@ requires-dist = [
     { name = "apscheduler", specifier = ">=3.10.0" },
     { name = "feedparser", specifier = ">=6.0.0" },
     { name = "google-adk", specifier = ">=1.0.0" },
+    { name = "google-cloud-aiplatform", extras = ["agent-engines", "adk"], marker = "extra == 'geap'", specifier = ">=1.112" },
     { name = "google-genai", specifier = ">=1.0.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
@@ -536,7 +540,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0.0" },
     { name = "streamlit", specifier = ">=1.35.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["dev", "geap"]
 
 [[package]]
 name = "distro"
@@ -865,6 +869,9 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+adk = [
+    { name = "google-adk" },
+]
 agent-engines = [
     { name = "aiohttp" },
     { name = "cloudpickle" },

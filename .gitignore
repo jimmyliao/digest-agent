@@ -43,6 +43,9 @@ next-env.d.ts
 *.bak
 *.legacy-*
 
+# Deploy artifacts (Agent Engine resource IDs from deploy script)
+deployed-agent-engines.txt
+
 # Large media (demo recordings, slides, submissions)
 *.mp4
 *.webm
