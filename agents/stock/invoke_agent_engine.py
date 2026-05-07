@@ -26,6 +26,7 @@ from pathlib import Path
 
 REGISTRY_FILE = "deployed-agent-engines.txt"
 DEFAULT_MESSAGE = "分析台積電 AI 晶片供應鏈"
+AUTO_DISCOVER_PREFIX = "digest-agent"
 
 
 def latest_resource_from_registry() -> str | None:
@@ -38,6 +39,45 @@ def latest_resource_from_registry() -> str | None:
     # Format: "<iso-utc>\t<resource_name>"
     parts = lines[-1].split("\t")
     return parts[1] if len(parts) >= 2 else None
+
+
+def auto_discover(project: str, location: str, prefix: str = AUTO_DISCOVER_PREFIX) -> str | None:
+    """Find a unique deployed engine matching display_name prefix. Returns None on 0 or >1 match."""
+    import vertexai
+    client = vertexai.Client(project=project, location=location)
+    matches = [
+        e for e in client.agent_engines.list()
+        if (e.api_resource.display_name or "").startswith(prefix)
+    ]
+    if len(matches) == 1:
+        return matches[0].api_resource.name
+    if len(matches) > 1:
+        print(
+            f"⚠️  Auto-discover found {len(matches)} engines matching '{prefix}':",
+            file=sys.stderr,
+        )
+        for e in matches:
+            print(f"    - {e.api_resource.name}", file=sys.stderr)
+        print(
+            "    Pass the specific resource path as first arg.",
+            file=sys.stderr,
+        )
+    return None
+
+
+def verify_resource_exists(resource: str, project: str, location: str) -> bool:
+    """Returns True if the engine exists, False if 404."""
+    import vertexai
+    try:
+        client = vertexai.Client(project=project, location=location)
+        client.agent_engines.get(name=resource)
+        return True
+    except Exception as e:
+        msg = str(e).lower()
+        if "not found" in msg or "404" in msg or "does not exist" in msg:
+            return False
+        # Other errors: surface upward
+        raise
 
 
 def parse_args(argv: list[str]) -> tuple[str | None, str]:
@@ -57,16 +97,6 @@ def parse_args(argv: list[str]) -> tuple[str | None, str]:
 def main() -> None:
     resource, message = parse_args(sys.argv[1:])
 
-    if resource is None:
-        resource = latest_resource_from_registry()
-        if resource is None:
-            print(
-                f"❌ No resource specified and {REGISTRY_FILE} is empty/missing.\n"
-                "   Run `./scripts/deploy-to-agent-engine.sh` first, or pass resource as arg.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-
     project = os.environ.get("GCP_PROJECT")
     location = os.environ.get("GCP_LOCATION", "us-central1")
     if not project:
@@ -78,6 +108,34 @@ def main() -> None:
     except ImportError:
         print(
             "❌ vertexai SDK not installed.\n   Run: uv sync --extra geap",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # Resolve resource via cascading fallback:
+    #   1. CLI arg
+    #   2. Registry file last line (verified to still exist)
+    #   3. Auto-discover by display_name prefix (must be unique)
+    if resource is None:
+        candidate = latest_resource_from_registry()
+        if candidate and verify_resource_exists(candidate, project, location):
+            resource = candidate
+            print(f"📒 Using registry latest: {candidate}")
+        elif candidate:
+            print(f"⚠️  Registry latest no longer exists (404): {candidate}")
+
+    if resource is None:
+        print(f"🔎 Auto-discovering by prefix '{AUTO_DISCOVER_PREFIX}'...")
+        resource = auto_discover(project, location)
+        if resource:
+            print(f"📡 Auto-discovered: {resource}")
+
+    if resource is None:
+        print(
+            "❌ Cannot resolve a deployed Agent Engine.\n"
+            "   - Check ./scripts/list-agent-engines.sh\n"
+            "   - Or run ./scripts/deploy-to-agent-engine.sh first\n"
+            "   - Or pass resource path as first arg",
             file=sys.stderr,
         )
         sys.exit(1)

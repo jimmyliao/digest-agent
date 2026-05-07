@@ -98,6 +98,27 @@ def main() -> None:
     print(f"🤖 Agent: {root_agent.name} ({type(root_agent).__name__})")
 
     client = vertexai.Client(project=project, location=location)
+
+    # Uniqueness check: ensure at most one digest-agent-stock-analyzer engine
+    DISPLAY_NAME = "digest-agent-stock-analyzer"
+    existing = [
+        e for e in client.agent_engines.list()
+        if (e.api_resource.display_name or "") == DISPLAY_NAME
+    ]
+    if existing:
+        print(f"\n⚠️  Found {len(existing)} existing '{DISPLAY_NAME}' engine(s):")
+        for e in existing:
+            print(f"    - {e.api_resource.name}")
+        ans = input("Delete them all and proceed with fresh deploy? [y/N] ").strip().lower()
+        if ans not in ("y", "yes"):
+            print("Aborted (existing engines retained).")
+            sys.exit(0)
+        for e in existing:
+            res_name = e.api_resource.name
+            print(f"🗑️  Deleting {res_name}...")
+            e.delete(force=True)
+        print()
+
     app = agent_engines.AdkApp(agent=root_agent)
 
     bucket_path = bucket.removeprefix("gs://")
