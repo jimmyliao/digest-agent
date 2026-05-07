@@ -159,12 +159,9 @@ def main() -> None:
     print(f"\n✅ Deployed: {resource_name}\n")
 
     # Append to local registry (gitignored) for follow-up invoke/delete scripts
-    from datetime import datetime, timezone
-    registry = "deployed-agent-engines.txt"
-    ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    with open(registry, "a", encoding="utf-8") as f:
-        f.write(f"{ts}\t{resource_name}\n")
-    print(f"📝 Logged to {registry} (latest line = newest deploy)")
+    from agents.stock import _registry
+    _registry.append(resource_name)
+    print(f"📝 Logged to {_registry.REGISTRY_FILE} (latest line = newest deploy)")
 
     # Clickable Console URLs (modern terminals auto-detect)
     # Note: Vertex AI Console doesn't expose a deep-link to individual agent

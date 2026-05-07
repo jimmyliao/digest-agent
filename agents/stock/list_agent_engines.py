@@ -10,6 +10,9 @@ Usage:
     # Strict uniqueness check (exit 1 if 0 or >1 matches)
     python -m agents.stock.list_agent_engines --filter digest-agent --require-unique
 
+    # Sync matched engines into deployed-agent-engines.txt (so invoke can find them)
+    python -m agents.stock.list_agent_engines --filter digest-agent --sync
+
 Env (loaded by wrapper script):
     GCP_PROJECT       required
     GCP_LOCATION      optional (default: us-central1)
@@ -24,11 +27,12 @@ import sys
 DEFAULT_FILTER = "digest-agent"
 
 
-def parse_args(argv: list[str]) -> tuple[str | None, bool, bool]:
-    """Returns (filter_prefix, require_unique, json_only)."""
+def parse_args(argv: list[str]) -> tuple[str | None, bool, bool, bool]:
+    """Returns (filter_prefix, require_unique, json_only, sync_to_registry)."""
     filter_prefix: str | None = None
     require_unique = False
     json_only = False
+    sync_to_registry = False
     i = 0
     while i < len(argv):
         a = argv[i]
@@ -39,15 +43,17 @@ def parse_args(argv: list[str]) -> tuple[str | None, bool, bool]:
             require_unique = True
         elif a == "--json":
             json_only = True
+        elif a == "--sync":
+            sync_to_registry = True
         elif a.startswith("--"):
             print(f"Unknown flag: {a}", file=sys.stderr)
             sys.exit(2)
         i += 1
-    return filter_prefix, require_unique, json_only
+    return filter_prefix, require_unique, json_only, sync_to_registry
 
 
 def main() -> None:
-    filter_prefix, require_unique, json_only = parse_args(sys.argv[1:])
+    filter_prefix, require_unique, json_only, sync_to_registry = parse_args(sys.argv[1:])
 
     project = os.environ.get("GCP_PROJECT")
     location = os.environ.get("GCP_LOCATION", "us-central1")
@@ -103,6 +109,18 @@ def main() -> None:
             print(f"    full       : {res.name}")
             if ct:
                 print(f"    created    : {ct}")
+            print()
+
+    # Optional: sync matched engine resource_names into the registry file
+    if sync_to_registry:
+        from agents.stock import _registry
+        names = [e.api_resource.name for e in matches]
+        n = _registry.sync_from_list(names)
+        if n > 0:
+            print(f"📝 Synced {n} new entry(ies) into {_registry.REGISTRY_FILE}")
+        else:
+            print(f"📝 Registry already up-to-date ({_registry.REGISTRY_FILE})")
+        if not json_only:
             print()
 
     # Uniqueness check
