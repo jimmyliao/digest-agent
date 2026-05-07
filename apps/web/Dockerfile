@@ -48,7 +48,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN bun run build
 
 # ── Stage 2: runner ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+# Must use bun runtime: builder compiled better-sqlite3 native addon against
+# bun's Node-API layer. Running it under plain node:20 produces a relocation
+# error (_ZN2v8...). bun image has no `node` binary, so entrypoint.sh runs
+# `bun server.js` (bun's Node-compat layer handles Next.js standalone fine).
+FROM oven/bun:1.3-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
