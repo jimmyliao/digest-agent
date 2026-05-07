@@ -27,17 +27,33 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-# ── Load env from .env.deploy or .env if vars not already set ──────────────
+# ── Load env from .env.deploy + .env (priority order) ──────────────────────
+# Resolution: shell env (highest) > .env.deploy > .env (fallback)
+# Skips empty values so a placeholder like GEMINI_API_KEY= doesn't block fallback
 load_env_file() {
   local file="$1"
   [[ -f "$file" ]] || return 0
-  # shellcheck disable=SC1090
-  set -a; . "$file"; set +a
-  echo "📂 Loaded env from: $file"
+  local loaded=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "${line// }" ]] && continue
+    if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+      local key="${BASH_REMATCH[1]}"
+      local val="${BASH_REMATCH[2]}"
+      # strip optional surrounding quotes
+      [[ "$val" =~ ^\"(.*)\"$ ]] && val="${BASH_REMATCH[1]}"
+      [[ "$val" =~ ^\'(.*)\'$ ]] && val="${BASH_REMATCH[1]}"
+      [[ -z "$val" ]] && continue   # skip empty placeholders
+      [[ -n "${!key:-}" ]] && continue   # don't overwrite existing
+      export "$key=$val"
+      loaded=$((loaded+1))
+    fi
+  done < "$file"
+  echo "📂 Loaded $loaded var(s) from: $file"
 }
 
-[[ -z "${GCP_PROJECT:-}" ]] && load_env_file .env.deploy
-[[ -z "${GCP_PROJECT:-}" ]] && load_env_file .env
+load_env_file .env.deploy
+load_env_file .env
 
 GCP_LOCATION="${GCP_LOCATION:-us-central1}"
 
