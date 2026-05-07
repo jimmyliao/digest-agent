@@ -28,6 +28,10 @@ interface AgentEvent {
     function_call?: { name: string; args?: Record<string, unknown> };
     function_response?: { name: string; response?: Record<string, unknown> };
   }>;
+  // Quota meter (only present on type === 'done')
+  llm_calls?: number;
+  tool_calls?: number;
+  duration_ms?: number;
 }
 
 const AGENT_ICONS: Record<string, string> = {
@@ -90,6 +94,18 @@ export default function StockAnalysisPage() {
       .join('\n'),
     [events],
   );
+
+  // Quota meter (from `done` event); falsy when run is in-flight or errored
+  // before completion.
+  const meter = useMemo(() => {
+    const done = events.find(e => e.type === 'done');
+    if (!done) return null;
+    return {
+      llm: done.llm_calls ?? 0,
+      tool: done.tool_calls ?? 0,
+      seconds: ((done.duration_ms ?? 0) / 1000).toFixed(1),
+    };
+  }, [events]);
 
   async function handleSubmit() {
     if (!query.trim() || running) return;
@@ -227,6 +243,24 @@ export default function StockAnalysisPage() {
         }}>
           {finalText}
         </section>
+      )}
+
+      {meter && (
+        <div style={{
+          marginBottom: '1rem', padding: '0.5rem 0.75rem',
+          background: '#eff6ff', border: '1px solid #bfdbfe',
+          borderRadius: '0.375rem', fontSize: '0.78rem', color: '#1e40af',
+          fontFamily: 'monospace',
+        }}>
+          📊 本次：<strong>{meter.llm}</strong> 次 LLM 呼叫 ·{' '}
+          <strong>{meter.tool}</strong> tool 呼叫 ·{' '}
+          <strong>{meter.seconds}s</strong>
+          {meter.llm > 0 && (
+            <span style={{ color: '#6b7280', marginLeft: '0.75rem' }}>
+              （Gemini free tier 1500 RPD ÷ {meter.llm} ≈ {Math.floor(1500 / meter.llm)} 次/天/key）
+            </span>
+          )}
+        </div>
       )}
 
       {events.filter(e => e.type === 'event').length > 0 && (
