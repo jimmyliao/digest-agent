@@ -195,7 +195,8 @@ gemini -p "@GEMINI.md Cloud Run UI 已部署（URL=https://...）。
 
 ## See also
 
-- `CLOUD_SHELL_WORKSHOP.md` — Streamlit path (5/9 workshop default)
-- `PERSISTENCE.md` — Litestream + GCS architecture
-- `GEAP_DEPLOY.md` — GEAP agent runtime deployment
-- `scripts/onboard-cloudshell.sh` — what `make onboard-cloudshell` runs
+- [`CLOUD_SHELL_WORKSHOP.md`](./CLOUD_SHELL_WORKSHOP.md) — Streamlit path (5/9 workshop default)
+- [`PERSISTENCE.md`](./PERSISTENCE.md) — Litestream + GCS architecture
+- [`GEAP_DEPLOY.md`](./GEAP_DEPLOY.md) — GEAP agent runtime deployment
+- [`scripts/README.md`](./scripts/README.md) — catalog of every script + its `make` wrapper
+- [`Makefile`](./Makefile) — run `make` (no args) for the curated entry-points table
