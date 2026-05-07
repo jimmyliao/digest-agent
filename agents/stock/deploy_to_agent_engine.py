@@ -120,10 +120,18 @@ def main() -> None:
         print()
 
     digest_api_url = os.environ.get("DIGEST_API_URL")
+    digest_api_user = os.environ.get("DIGEST_API_USER") or os.environ.get("BASIC_AUTH_USER")
+    digest_api_pass = os.environ.get("DIGEST_API_PASSWORD") or os.environ.get("BASIC_AUTH_PASSWORD")
     if not digest_api_url:
         print(
             "⚠️  DIGEST_API_URL not set — agent will fall back to local SQLite "
             "(deployed engine likely has empty DB)",
+            file=sys.stderr,
+        )
+    elif not (digest_api_user and digest_api_pass):
+        print(
+            "⚠️  DIGEST_API_USER / DIGEST_API_PASSWORD (or BASIC_AUTH_*) not set "
+            "— if the Cloud Run UI is gated by Basic Auth, agent's HTTP call will 401",
             file=sys.stderr,
         )
 
@@ -178,6 +186,12 @@ def main() -> None:
         # Inject so deployed agent uses HTTP fallback against the digest-agent
         # web API instead of an empty local SQLite DB.
         env_vars["DIGEST_API_URL"] = digest_api_url
+        # Basic Auth creds for gated Cloud Run UI (see middleware.ts).
+        # Mirror BASIC_AUTH_* names so the same .env.deploy works for both
+        # `make deploy-web` and `make deploy-agent-engine`.
+        if digest_api_user and digest_api_pass:
+            env_vars["DIGEST_API_USER"] = digest_api_user
+            env_vars["DIGEST_API_PASSWORD"] = digest_api_pass
 
     try:
         remote = client.agent_engines.create(
