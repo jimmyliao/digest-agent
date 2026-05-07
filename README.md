@@ -35,28 +35,34 @@ No backend server required — everything runs in a single Python process.
 
 ## Quick Start
 
+> Two parallel paths — pick one based on your goal.
+
+### 🐍 Path A: Streamlit (recommended for the 5/9 GDG workshop)
+
 ```bash
-# 1. Clone
 git clone https://github.com/jimmyliao/digest-agent.git
 cd digest-agent
-
-# 2. Install (requires uv)
-uv sync --all-extras
-
-# 3. Configure
-cp .env.example .env
-# Edit .env — add GEMINI_API_KEY at minimum
-
-# 4. Run
-uv run streamlit run src/app.py --server.port=8080
-# Open http://localhost:8080
+uv sync --all-extras                          # Python deps
+cp .env.example .env && vim .env              # set GEMINI_API_KEY
+make dev                                       # http://localhost:8080
 ```
 
-Or with `make`:
+Cloud Shell shortcut (no setup): `make dev-shell` (port 8080 with Web Preview).
+
+### ⚛️ Path B: Next.js (for AIA showcase / production-style demo)
+
 ```bash
-make install
-make dev     # loads .env by default
+git clone https://github.com/jimmyliao/digest-agent.git
+cd digest-agent
+make onboard-cloudshell                        # installs bun + uv, runs install
+vim apps/web/.env.local                        # set GEMINI_API_KEY
+cd apps/web && bun run dev                     # http://localhost:3000
 ```
+
+`make onboard-cloudshell` is **idempotent** and works on Google Cloud Shell, macOS, Linux, WSL.
+
+For magic-prompt onboarding via Gemini CLI, see [WORKSHOP_NEXTJS.md](./WORKSHOP_NEXTJS.md).
+For Streamlit workshop magic prompts, see [CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md).
 
 **Alternative — use with AI Agent CLI:**
 
