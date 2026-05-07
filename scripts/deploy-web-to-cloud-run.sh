@@ -221,11 +221,25 @@ echo "   2. gcloud run deploy --image to $SERVICE_NAME in $GCP_LOCATION"
 echo "   3. Inject env: LITESTREAM_GCS_BUCKET=$LITESTREAM_GCS_BUCKET"
 echo "                  DATABASE_URL=file:/data/digest.db"
 echo ""
-read -r -p "Continue? [y/N] " ans
-case "$ans" in
-  [yY]|[yY][eE][sS]) ;;
-  *) echo "Aborted."; exit 0 ;;
-esac
+# Auto-proceed in three cases (workshop / CI / scripted runs):
+#   1. Non-interactive stdin (`make deploy-web > log.txt 2>&1 &`, CI runners,
+#      `gcloud cloud-shell ssh --command="..."` — read -r would EOF and `set -e`
+#      would kill the script with exit 1, which is misleading)
+#   2. CONFIRM_DEPLOY=y env var (explicit opt-in for scripted unattended runs)
+#   3. User answers y/yes at the interactive prompt
+if [[ ! -t 0 ]]; then
+  echo "ℹ️  stdin not a terminal — auto-proceeding (set CONFIRM_DEPLOY=n to abort)"
+  [[ "${CONFIRM_DEPLOY:-y}" == "n" ]] && { echo "Aborted (CONFIRM_DEPLOY=n)."; exit 0; }
+elif [[ -n "${CONFIRM_DEPLOY:-}" ]]; then
+  echo "ℹ️  CONFIRM_DEPLOY=${CONFIRM_DEPLOY} — skipping prompt"
+  case "$CONFIRM_DEPLOY" in [yY]|[yY][eE][sS]) ;; *) echo "Aborted."; exit 0 ;; esac
+else
+  read -r -p "Continue? [y/N] " ans
+  case "$ans" in
+    [yY]|[yY][eE][sS]) ;;
+    *) echo "Aborted."; exit 0 ;;
+  esac
+fi
 
 # ── Ensure Artifact Registry repo exists ──────────────────────────────────
 AR_REPO="${AR_REPO:-cloud-run-source-deploy}"
