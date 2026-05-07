@@ -48,6 +48,14 @@ export async function POST(req: NextRequest) {
 
       send({ type: 'start', engine: engineName, message });
 
+      // Quota meter — count Gemini API calls (events with role='model')
+      // and tool invocations (function_call inside model events). Reported
+      // in the final `done` event so the page can surface a "本次 N 次 LLM
+      // 呼叫" line without consulting Cloud Console.
+      const t0 = Date.now();
+      let llmCalls = 0;
+      let toolCalls = 0;
+
       try {
         for await (const event of streamReasoningEngine(
           engineName,
@@ -58,23 +66,37 @@ export async function POST(req: NextRequest) {
           // Vertex AI returns events shaped as
           //   { author, content: { role, parts: [...] }, ... }
           // The page consumer expects parts at top level. Flatten so that
-          // event.parts is the array (preserving raw event under .raw for
-          // anyone who needs the original shape).
+          // event.parts is the array.
+          type RawPart = { function_call?: unknown; text?: unknown };
           type RawEvent = {
             author?: string;
-            content?: { role?: string; parts?: unknown[] };
+            content?: { role?: string; parts?: RawPart[] };
             [k: string]: unknown;
           };
           const e = event as RawEvent;
-          const parts = e.content?.parts ?? (Array.isArray((e as { parts?: unknown[] }).parts) ? (e as { parts?: unknown[] }).parts : []);
+          const parts: RawPart[] = e.content?.parts ?? (Array.isArray((e as { parts?: RawPart[] }).parts) ? (e as { parts?: RawPart[] }).parts! : []);
+          const role = e.content?.role;
+
+          if (role === 'model') {
+            llmCalls += 1;
+            for (const p of parts) {
+              if (p?.function_call) toolCalls += 1;
+            }
+          }
+
           send({
             type: 'event',
             author: e.author,
-            role: e.content?.role,
+            role,
             parts,
           });
         }
-        send({ type: 'done' });
+        send({
+          type: 'done',
+          llm_calls: llmCalls,
+          tool_calls: toolCalls,
+          duration_ms: Date.now() - t0,
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         send({ type: 'error', error: msg });
