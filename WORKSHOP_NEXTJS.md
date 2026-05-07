@@ -27,11 +27,42 @@ echo 'export GEMINI_API_KEY=AIza...' >> ~/.bashrc
 
 ---
 
-## Magic Prompt 1 — One-shot onboarding (install bun + uv + deps)
+## Magic Prompt 0 — One-command verify ⭐ 推薦第一次跑這個
+
+這把 Magic Prompts 1 + 2 包成 `make workshop-verify` 一個指令。如果只想知道
+「這台 Cloud Shell 環境跑得起來嗎？」就跑這個。
+
+```bash
+gemini -p "@GEMINI.md 我在 Google Cloud Shell。請幫我跑 make workshop-verify，
+過程會：
+1. 安裝 bun + uv（已裝會跳過）
+2. bun install + uv sync 把所有依賴裝好
+3. scaffold apps/web/.env.local（含 BASIC_AUTH_DISABLED=1）
+4. 在 background 起 apps/web dev server
+5. 等 port 3000 起來後 curl /api/health 確認 200
+6. 自動關掉 dev server，印 PASS/FAIL
+
+跑完告訴我：bun 版本、uv 版本、health endpoint 回傳、是否全部 ✅"
+```
+
+**預期結果**：終端最後印
+```
+✅ Cloud Shell smoke test PASSED
+🎉 Workshop environment verified end-to-end.
+   onboard ✅   smoke ✅
+```
+
+失敗時就跑下面 Magic Prompts 1–3 拆步驟 debug。
+
+---
+
+## Magic Prompt 1 — Onboarding only (install bun + uv + deps)
+
+只想裝環境、不要跑 smoke 用這個（例如要先手動填 GEMINI_API_KEY）。
 
 ```bash
 gemini -p "@GEMINI.md 我在 Google Cloud Shell。請幫我：
-1. 跑 ./scripts/onboard-cloudshell.sh （或等價 make onboard-cloudshell）
+1. 跑 make onboard-cloudshell
 2. 確認 bun --version 和 uv --version 都有版號（沒有就提醒重 source ~/.bashrc）
 3. 確認 apps/web/.env.local 已建立、且預設帶有 BASIC_AUTH_DISABLED=1
 4. 把 GEMINI_API_KEY 寫進 apps/web/.env.local 的 GEMINI_API_KEY= 欄位

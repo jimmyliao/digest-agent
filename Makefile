@@ -1,4 +1,34 @@
-.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local test-local-e2e test-local-api-real onboard-cloudshell
+.PHONY: help install dev dev-shell test lint build run deploy deploy-workshop shell clean adk-web adk-run \
+        setup-data-bucket deploy-web \
+        test-local test-local-e2e test-local-api-real \
+        onboard-cloudshell smoke-cloudshell workshop-verify
+
+# Default target — `make` with no args prints the curated workshop entry points.
+help:
+	@echo ""
+	@echo "── Workshop entry points (5/9 BwAI 台中) ──"
+	@echo "  make workshop-verify     One-shot: onboard + smoke test (Cloud Shell / fresh dev box)"
+	@echo "  make onboard-cloudshell  Install bun + uv + deps + scaffold .env.local (idempotent)"
+	@echo "  make smoke-cloudshell    Boot apps/web dev + curl /api/health (validates onboard)"
+	@echo "  make dev-shell           Run Streamlit (default 5/9 path) on Cloud Shell port 8080"
+	@echo ""
+	@echo "── Test ──"
+	@echo "  make test-local          vitest + pytest + bash lint"
+	@echo "  make test-local-e2e      End-to-end local smoke (no LLM key needed)"
+	@echo "  make test-local-api-real Real-API smoke (needs GEMINI_API_KEY)"
+	@echo ""
+	@echo "── Deploy (Cloud Run + GEAP) ──"
+	@echo "  make setup-data-bucket   Create GCS bucket for Litestream (one-time)"
+	@echo "  make deploy-web          Deploy apps/web (Next.js + Litestream) to Cloud Run"
+	@echo "  make deploy-agent-engine Deploy ADK agents to Vertex AI Agent Engine (GEAP)"
+	@echo "  make invoke-agent-engine Invoke deployed GEAP for a smoke run"
+	@echo ""
+	@echo "── Local dev ──"
+	@echo "  make dev                 Streamlit local (loads .env)"
+	@echo "  make adk-web             ADK web UI to test agents/stock interactively"
+	@echo "  make shell               Drop into shell with .env loaded"
+	@echo ""
+	@echo "Run 'make <target>' or see Makefile for the full list."
 
 ENV_FILE ?= .env
 WORKSPACE_ENV ?= $(HOME)/workspace/.env
@@ -180,3 +210,19 @@ test-local-api-real:
 # Usage: make onboard-cloudshell
 onboard-cloudshell:
 	@bash scripts/onboard-cloudshell.sh
+
+# Smoke test the environment created by onboard-cloudshell:
+# boots apps/web dev, waits for port 3000, hits /api/health + /api/articles.
+# Auto-cleans the dev server on exit.
+# Usage: make smoke-cloudshell
+smoke-cloudshell:
+	@bash scripts/smoke-cloudshell.sh
+
+# Composite: onboard then smoke. Use this on a fresh Cloud Shell to verify
+# the workshop Next.js path works end-to-end before students arrive.
+# Usage: make workshop-verify
+workshop-verify: onboard-cloudshell smoke-cloudshell
+	@echo ""
+	@echo "🎉 Workshop environment verified end-to-end."
+	@echo "   onboard ✅   smoke ✅"
+	@echo "   You're ready for 5/9 BwAI 台中."
