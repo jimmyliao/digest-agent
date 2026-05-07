@@ -14,10 +14,13 @@ Open Google Cloud Shell, then:
 ```bash
 git clone https://github.com/jimmyliao/digest-agent.git
 cd digest-agent
-gemini --version       # confirm Gemini CLI available (Cloud Shell has it)
-gemini auth login      # OAuth, no API key needed for the CLI itself
+gemini --version                   # confirm Gemini CLI available (Cloud Shell has it pre-installed)
+# Cloud Shell auto-authenticates the `gemini` CLI via your logged-in Google
+# account on first use — no manual `auth login` needed. If a prompt appears,
+# follow it; otherwise just continue.
 
 # Get a free Gemini API key at: https://aistudio.google.com/app/apikey
+# (separate from the CLI auth — the *app* needs this for Gemini API calls)
 export GEMINI_API_KEY=AIza...
 echo 'export GEMINI_API_KEY=AIza...' >> ~/.bashrc
 ```
