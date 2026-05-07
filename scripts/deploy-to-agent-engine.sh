@@ -55,6 +55,15 @@ load_env_file() {
 load_env_file .env.deploy
 load_env_file .env
 
+# Scrub well-known placeholder values that would otherwise leak from a
+# scaffolded `.env` (copied from .env.example without filling). These
+# specifically break GEAP deploys because the genai/vertexai SDK captures
+# os.environ at AdkApp construction → bakes into cloudpickle → deployed
+# agent calls Gemini with project='your-gcp-project-id-here' → 403.
+[[ "${GOOGLE_CLOUD_PROJECT:-}" == "your-gcp-project-id-here" ]] && unset GOOGLE_CLOUD_PROJECT
+[[ "${GOOGLE_API_KEY:-}"       == "your-gemini-api-key-here" ]] && unset GOOGLE_API_KEY
+[[ "${GEMINI_API_KEY:-}"       == "your-gemini-api-key-here" ]] && unset GEMINI_API_KEY
+
 GCP_LOCATION="${GCP_LOCATION:-us-central1}"
 
 # ── Validate ────────────────────────────────────────────────────────────────
