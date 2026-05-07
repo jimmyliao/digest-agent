@@ -145,9 +145,21 @@ print(f'  source={src} total_in_db={r.get(\"total_in_db\")} ok')
 " || fail "HTTP mode test failed"
 ok "HTTP mode → source=remote_api"
 
+# Use a fresh temp SQLite DB for the SQLite-path tests so we don't depend
+# on whatever schema the user's local data/digest.db is at (older clones
+# may have a pre-content_hash schema and would break with OperationalError).
+TMP_DB_DIR=$(mktemp -d)
+TMP_DB="${TMP_DB_DIR}/test-digest.db"
+trap 'cleanup; rm -rf "$TMP_DB_DIR" 2>/dev/null || true' EXIT INT TERM
+DATABASE_URL="sqlite:///${TMP_DB}" uv run python -c "
+from src.models.database import init_db
+init_db()
+" >/dev/null 2>&1 || fail "could not init temp SQLite schema at $TMP_DB"
+echo "  using fresh temp DB: $TMP_DB"
+
 step "Step 7 — agent: B) SQLite path (DIGEST_API_URL unset)"
 unset DIGEST_API_URL
-uv run python -c "
+DATABASE_URL="sqlite:///${TMP_DB}" uv run python -c "
 import os
 os.environ.pop('DIGEST_API_URL', None)
 from agents.stock.tools.news_tools import search_db_articles
@@ -159,7 +171,7 @@ print(f'  source={src} total_in_db={r.get(\"total_in_db\")} ok')
 ok "env unset → source=local_db"
 
 step "Step 8 — agent: C) HTTP fail → SQLite fallback (port 9999 dead)"
-DIGEST_API_URL=http://localhost:9999 uv run python -c "
+DIGEST_API_URL=http://localhost:9999 DATABASE_URL="sqlite:///${TMP_DB}" uv run python -c "
 from agents.stock.tools.news_tools import search_db_articles
 r = search_db_articles('TSMC', '2330', 10)
 src = r.get('source')
