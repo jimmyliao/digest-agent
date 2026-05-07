@@ -77,11 +77,19 @@ def search_db_articles(company_name: str, ticker: str = "", limit: int = 10) -> 
         print("[search_db_articles] mode=SQLite (local_db)")
 
     if using_http:
+        # If the remote UI is gated by HTTP Basic Auth (Cloud Run + Next.js
+        # middleware), the agent must authenticate too. Read creds from
+        # DIGEST_API_USER / DIGEST_API_PASSWORD; absent → unauthenticated
+        # request (works only against ungated dev deployments).
+        api_user = os.environ.get("DIGEST_API_USER")
+        api_pass = os.environ.get("DIGEST_API_PASSWORD")
+        auth = (api_user, api_pass) if api_user and api_pass else None
         try:
             resp = requests.get(
                 f"{api_url.rstrip('/')}/api/articles",
                 params={"company": company_name, "limit": limit},
                 timeout=10,
+                auth=auth,
             )
             if 200 <= resp.status_code < 300:
                 payload = resp.json()
