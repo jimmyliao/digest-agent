@@ -174,6 +174,10 @@ def main() -> None:
                     # can pollute the genai client into API-key auth mode, which then
                     # breaks SessionService.CreateSession with RESOURCE_PROJECT_INVALID.
                     "GOOGLE_GENAI_USE_VERTEXAI": "true",
+                    # Auto-enable telemetry (Console dashboard 'agent request count' /
+                    # latency / errors). Free tier 2.5M spans/month covers our usage.
+                    # SDK default is 'unspecified' → no metrics. Explicit 'true' opts in.
+                    "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY": "true",
                     # API key is no longer needed when GOOGLE_GENAI_USE_VERTEXAI=true
                     # — engine uses its managed SA for both Gemini and SessionService.
                 },
