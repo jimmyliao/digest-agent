@@ -135,8 +135,16 @@ fi
 # ── 5. Repo deps install ───────────────────────────────────────────────────
 step "Install workspace deps (bun install)"
 if [[ -f bun.lock ]]; then
-  bun install --frozen-lockfile 2>&1 | tail -3
-  ok "Next.js workspace deps installed"
+  # Try frozen-lockfile first; if bun.lock format drifted between bun versions
+  # (e.g. Cloud Shell student grabbed an older repo state), fall back to a
+  # regenerating install rather than dying mid-onboarding.
+  if bun install --frozen-lockfile 2>&1 | tail -3; then
+    ok "Next.js workspace deps installed (frozen lockfile)"
+  else
+    warn "frozen-lockfile install failed — retrying with lockfile regeneration"
+    bun install 2>&1 | tail -3
+    ok "Next.js workspace deps installed (lockfile regenerated)"
+  fi
 else
   warn "bun.lock missing at repo root — skipping bun install"
 fi
