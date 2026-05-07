@@ -108,10 +108,12 @@ else
 fi
 
 # 3. Required GCP APIs
+# apphub: required for the Agent Platform Console dashboard (telemetry charts)
 required_apis=(
   "aiplatform.googleapis.com"
   "storage.googleapis.com"
   "cloudbuild.googleapis.com"
+  "apphub.googleapis.com"
 )
 enabled_apis=$(gcloud services list --enabled --project="$GCP_PROJECT" --format='value(config.name)' 2>/dev/null || true)
 for api in "${required_apis[@]}"; do
