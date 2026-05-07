@@ -60,3 +60,7 @@ aia-*.md
 aia-*.png
 aia-submission*
 page@*.webm
+
+# Playwright E2E artifacts (videos / traces / screenshots)
+apps/web/test-results/
+apps/web/playwright-report/
