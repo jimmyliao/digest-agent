@@ -11,7 +11,35 @@
 
 import path from 'path';
 
-const DB_PATH = process.env.DATABASE_PATH ?? path.join(process.cwd(), '../../data/digest.db');
+/**
+ * Resolve the SQLite path from environment.
+ *
+ * Priority:
+ *   1. DATABASE_PATH         — raw path override (legacy / test convenience).
+ *                              Supports ":memory:" for in-process tests.
+ *   2. DATABASE_URL          — preferred, file:-style URL.
+ *                                "file:./data/digest.db"  → "./data/digest.db"
+ *                                "file:/data/digest.db"   → "/data/digest.db"
+ *   3. Default               — "/data/digest.db" (container-ready, matches
+ *                              Litestream replication mount in production).
+ *                              Local dev should set DATABASE_URL=file:./data/digest.db
+ *                              in .env.local to keep the DB inside the workspace.
+ */
+export function resolveDbPath(): string {
+  const raw = process.env.DATABASE_PATH;
+  if (raw && raw.length > 0) return raw;
+
+  const url = process.env.DATABASE_URL;
+  if (url && url.length > 0) {
+    // Strip optional file: scheme; everything else is treated as a literal path
+    if (url.startsWith('file:')) return url.slice('file:'.length);
+    return url;
+  }
+
+  return '/data/digest.db';
+}
+
+const DB_PATH = resolveDbPath();
 
 // ── Unified thin interface ──────────────────────────────────────────────────
 interface StmtLike {
@@ -27,7 +55,29 @@ interface DbLike {
 }
 
 // ── Bun adapter ──────────────────────────────────────────────────────────────
-function makeBunDb(bunSqlite: typeof import('bun:sqlite')): DbLike {
+// `bun:sqlite` types ship with `bun-types`, which we deliberately don't add as
+// a devDependency (this app's build runs under Node, not Bun). The shape is
+// duck-typed at runtime; we accept a structural fragment here.
+type BunSqliteModule = {
+  Database: new (
+    path: string,
+    opts?: { create?: boolean; readwrite?: boolean }
+  ) => {
+    run: (sql: string, params?: unknown[]) => void;
+    prepare: (sql: string) => {
+      run: (...args: unknown[]) => { lastInsertRowid: number | bigint; changes: number };
+      all: (...args: unknown[]) => unknown[];
+      get: (...args: unknown[]) => unknown;
+    };
+    query: (sql: string) => {
+      run: (...args: unknown[]) => { lastInsertRowid: number | bigint; changes: number };
+      all: (...args: unknown[]) => unknown[];
+      get: (...args: unknown[]) => unknown;
+    };
+  };
+};
+
+function makeBunDb(bunSqlite: BunSqliteModule): DbLike {
   const { Database } = bunSqlite;
   const raw = new Database(DB_PATH, { create: true });
   raw.run('PRAGMA journal_mode = WAL');
@@ -104,10 +154,10 @@ function getDb(): DbLike {
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-  const isBun = typeof globalThis.Bun !== 'undefined';
+  const isBun = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined';
   if (isBun) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const bunSqlite = require('bun:sqlite') as typeof import('bun:sqlite');
+    const bunSqlite = require('bun:sqlite') as BunSqliteModule;
     _db = makeBunDb(bunSqlite);
   } else {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
