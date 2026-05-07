@@ -1,4 +1,4 @@
-.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local test-local-e2e test-local-api-real
+.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local test-local-e2e test-local-api-real onboard-cloudshell
 
 ENV_FILE ?= .env
 WORKSPACE_ENV ?= $(HOME)/workspace/.env
@@ -173,3 +173,10 @@ test-local-e2e:
 #   make test-local-api-real ARGS=--with-publish
 test-local-api-real:
 	@bash scripts/test-local-api-real.sh $(ARGS)
+
+# One-shot onboarding for Cloud Shell / fresh dev machines.
+# Installs bun + uv, runs bun install + uv sync, scaffolds .env files.
+# Idempotent — re-runnable, skips anything already installed.
+# Usage: make onboard-cloudshell
+onboard-cloudshell:
+	@bash scripts/onboard-cloudshell.sh
