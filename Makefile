@@ -1,4 +1,4 @@
-.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local
+.PHONY: install dev test lint build run deploy deploy-workshop shell clean adk-web adk-run setup-data-bucket deploy-web test-local test-local-e2e
 
 ENV_FILE ?= .env
 WORKSPACE_ENV ?= $(HOME)/workspace/.env
@@ -156,3 +156,10 @@ test-local:
 	uv run pytest tests/ -v --no-header 2>&1 | tail -20
 	bash -n scripts/setup-data-bucket.sh scripts/deploy-web-to-cloud-run.sh infra/entrypoint.sh
 	@echo "✅ All local tests passed"
+
+# End-to-end local smoke (boots Next.js dev, hits API, exercises agent
+# HTTP/SQLite/fallback modes; auto-cleans the dev server on exit).
+# No GCS, no Cloud Run, no LLM key needed.
+# Usage: make test-local-e2e
+test-local-e2e:
+	@bash scripts/test-local-e2e.sh
