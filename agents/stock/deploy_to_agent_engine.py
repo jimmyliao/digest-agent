@@ -75,15 +75,43 @@ def main() -> None:
             },
         },
     )
-    print(f"✅ Deployed: {remote.api_resource.name}")
+    resource_name = remote.api_resource.name
+    # parse resource_name: projects/PROJECT_NUM/locations/LOCATION/reasoningEngines/ENGINE_ID
+    engine_id = resource_name.rsplit("/", 1)[-1]
+
+    print(f"\n✅ Deployed: {resource_name}\n")
+
+    # Append to local registry (gitignored) for follow-up invoke/delete scripts
+    from datetime import datetime, timezone
+    registry = "deployed-agent-engines.txt"
+    ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with open(registry, "a", encoding="utf-8") as f:
+        f.write(f"{ts}\t{resource_name}\n")
+    print(f"📝 Logged to {registry} (latest line = newest deploy)")
+
+    # Clickable Console URLs (modern terminals auto-detect)
+    console_base = "https://console.cloud.google.com"
     print(
-        "\nTo invoke (Python):\n"
+        "\n🔗 Console links:\n"
+        f"  Agent detail : {console_base}/vertex-ai/agents/locations/{location}/agent-engines/{engine_id}?project={project}\n"
+        f"  Cloud Build  : {console_base}/cloud-build/builds?project={project}\n"
+        f"  Logs         : {console_base}/logs/query;query=resource.type%3D%22aiplatform.googleapis.com%2FReasoningEngine%22?project={project}\n"
+        f"  Staging bkt  : {console_base}/storage/browser/{bucket.removeprefix('gs://')}?project={project}\n"
+    )
+
+    print(
+        "🐍 To invoke (Python):\n"
         "    import vertexai\n"
         f"    client = vertexai.Client(project='{project}', location='{location}')\n"
-        f"    remote = client.agent_engines.get('{remote.api_resource.name}')\n"
+        f"    remote = client.agent_engines.get('{resource_name}')\n"
         "    async for event in remote.async_stream_query(\n"
         "        user_id='demo', message='分析台積電'):\n"
         "        print(event)\n"
+    )
+
+    print(
+        "🗑️  To delete:\n"
+        f"    remote.delete(force=True)\n"
     )
 
 
