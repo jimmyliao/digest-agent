@@ -28,6 +28,7 @@ htmlcov/
 
 # AI tools (local settings, not for repo)
 .gemini/settings.local.json
+.claude/worktrees/
 
 # macOS
 .DS_Store
