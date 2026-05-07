@@ -137,7 +137,27 @@ def search_db_articles(company_name: str, ticker: str = "", limit: int = 10) -> 
                 e,
             )
 
-    from src.models.database import SessionLocal, ArticleDB
+    # Local SQLite fallback. The deployed-on-GEAP code path does NOT bundle
+    # src/ (extra_packages=["agents"] only), so this import will fail in
+    # production. Catch and return a graceful empty result rather than
+    # crashing the agent stream.
+    try:
+        from src.models.database import SessionLocal, ArticleDB
+    except ImportError as e:
+        logger.warning(
+            "src/ unavailable (likely deployed env without bundled src). "
+            "Returning empty result. Cause: %s",
+            e,
+        )
+        return {
+            "status": "success",
+            "source": "local_db_unavailable",
+            "company": company_name,
+            "ticker": ticker,
+            "articles": [],
+            "total_matched": 0,
+            "total_in_db": 0,
+        }
 
     keywords = [company_name]
     if ticker:
@@ -188,7 +208,21 @@ def search_company_news(company_name: str, ticker: str = "") -> dict:
     Returns:
         包含搜尋結果的字典，含 articles 列表與 metadata
     """
-    from src.fetcher.rss_fetcher import RSSFetcher
+    try:
+        from src.fetcher.rss_fetcher import RSSFetcher
+    except ImportError as e:
+        logger.warning(
+            "src/fetcher unavailable (likely deployed env). RSS fallback skipped. Cause: %s",
+            e,
+        )
+        return {
+            "status": "success",
+            "source": "rss_unavailable",
+            "company": company_name,
+            "ticker": ticker,
+            "articles": [],
+            "total": 0,
+        }
 
     fetcher = RSSFetcher()
 
@@ -242,7 +276,19 @@ def fetch_financial_news_feeds(max_articles: int = 20) -> dict:
     Returns:
         包含最新財經新聞的字典
     """
-    from src.fetcher.rss_fetcher import RSSFetcher
+    try:
+        from src.fetcher.rss_fetcher import RSSFetcher
+    except ImportError as e:
+        logger.warning(
+            "src/fetcher unavailable (likely deployed env). RSS feed fetch skipped. Cause: %s",
+            e,
+        )
+        return {
+            "status": "success",
+            "source": "rss_unavailable",
+            "articles": [],
+            "total": 0,
+        }
 
     fetcher = RSSFetcher()
 
