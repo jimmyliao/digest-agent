@@ -1,0 +1,9 @@
+dbs:
+  - path: /data/digest.db
+    replicas:
+      - type: gcs
+        bucket: ${LITESTREAM_GCS_BUCKET}
+        path: digest-db
+        sync-interval: 10s
+        snapshot-interval: 1h
+        retention: 72h
