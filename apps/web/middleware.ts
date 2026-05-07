@@ -6,8 +6,8 @@
  *   - Next internal static assets (_next/*)
  *
  * Credentials come from env (Cloud Run --set-env-vars or apps/web/.env.local):
- *   BASIC_AUTH_USER       default: "admin"
- *   BASIC_AUTH_PASSWORD   default: "digest2026bwaijimmy"  ← rotate for prod
+ *   BASIC_AUTH_USER       required (no default — must be set explicitly)
+ *   BASIC_AUTH_PASSWORD   required (no default)
  *
  * To rotate credentials in production: edit `.env.deploy` then re-run
  * `make deploy-web`. Cloud Run bakes env vars into a new revision (~30s).
@@ -42,8 +42,18 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const expectedUser = process.env.BASIC_AUTH_USER || 'admin';
-  const expectedPass = process.env.BASIC_AUTH_PASSWORD || 'digest2026bwaijimmy';
+  // No silent defaults: a public repo would leak them. Fail closed if either
+  // env var is missing — operator must set both, or disable via
+  // BASIC_AUTH_DISABLED=1 for local dev.
+  const expectedUser = process.env.BASIC_AUTH_USER ?? '';
+  const expectedPass = process.env.BASIC_AUTH_PASSWORD ?? '';
+  if (!expectedUser || !expectedPass) {
+    return new NextResponse(
+      'Server misconfigured: BASIC_AUTH_USER / BASIC_AUTH_PASSWORD not set. ' +
+      'For local dev, set BASIC_AUTH_DISABLED=1 in apps/web/.env.local.',
+      { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
+    );
+  }
 
   const header = req.headers.get('authorization') ?? '';
   if (header.startsWith('Basic ')) {

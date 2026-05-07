@@ -58,13 +58,11 @@ describe('middleware: HTTP Basic Auth', () => {
     expect(resp.status).toBe(200);
   });
 
-  it('uses default admin/digest2026bwaijimmy when env unset', () => {
+  it('returns 503 when env unset (no silent defaults)', () => {
     delete process.env.BASIC_AUTH_USER;
     delete process.env.BASIC_AUTH_PASSWORD;
-    const resp = middleware(
-      makeReq('/', basic('admin', 'digest2026bwaijimmy')),
-    );
-    expect(resp.status).toBe(200);
+    const resp = middleware(makeReq('/'));
+    expect(resp.status).toBe(503);
   });
 
   it('BASIC_AUTH_DISABLED=1 bypasses entirely', () => {

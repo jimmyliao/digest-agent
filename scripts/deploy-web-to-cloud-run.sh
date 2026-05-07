@@ -257,13 +257,17 @@ echo ""
 echo "🚀 Deploying $SERVICE_NAME..."
 echo ""
 
-# Build the env-vars list. GEAP_RESOURCE_NAME + BASIC_AUTH_* are optional.
-ENV_VARS="LITESTREAM_GCS_BUCKET=$LITESTREAM_GCS_BUCKET,DATABASE_URL=file:/data/digest.db"
-[[ -n "${GEAP_RESOURCE_NAME:-}" ]]   && ENV_VARS="$ENV_VARS,GEAP_RESOURCE_NAME=$GEAP_RESOURCE_NAME"
-[[ -n "${BASIC_AUTH_USER:-}" ]]      && ENV_VARS="$ENV_VARS,BASIC_AUTH_USER=$BASIC_AUTH_USER"
-[[ -n "${BASIC_AUTH_PASSWORD:-}" ]]  && ENV_VARS="$ENV_VARS,BASIC_AUTH_PASSWORD=$BASIC_AUTH_PASSWORD"
-[[ -n "${LLM_PROVIDER:-}" ]]         && ENV_VARS="$ENV_VARS,LLM_PROVIDER=$LLM_PROVIDER"
-[[ -n "${GEMINI_API_KEY:-}" ]]       && ENV_VARS="$ENV_VARS,GEMINI_API_KEY=$GEMINI_API_KEY"
+# Build the env-vars list. Use gcloud's `^|^` custom-delimiter syntax so values
+# may freely contain commas (e.g. an LLM key, password, or comma-separated
+# config) — the standard `,` delimiter would silently split a value containing
+# `,` into multiple env vars or break the deploy.
+#   See: https://cloud.google.com/sdk/gcloud/reference/topic/escaping
+ENV_VARS="^|^LITESTREAM_GCS_BUCKET=$LITESTREAM_GCS_BUCKET|DATABASE_URL=file:/data/digest.db"
+[[ -n "${GEAP_RESOURCE_NAME:-}" ]]   && ENV_VARS="$ENV_VARS|GEAP_RESOURCE_NAME=$GEAP_RESOURCE_NAME"
+[[ -n "${BASIC_AUTH_USER:-}" ]]      && ENV_VARS="$ENV_VARS|BASIC_AUTH_USER=$BASIC_AUTH_USER"
+[[ -n "${BASIC_AUTH_PASSWORD:-}" ]]  && ENV_VARS="$ENV_VARS|BASIC_AUTH_PASSWORD=$BASIC_AUTH_PASSWORD"
+[[ -n "${LLM_PROVIDER:-}" ]]         && ENV_VARS="$ENV_VARS|LLM_PROVIDER=$LLM_PROVIDER"
+[[ -n "${GEMINI_API_KEY:-}" ]]       && ENV_VARS="$ENV_VARS|GEMINI_API_KEY=$GEMINI_API_KEY"
 
 gcloud run deploy "$SERVICE_NAME" \
   --image "$IMAGE" \
