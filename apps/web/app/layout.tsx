@@ -9,6 +9,7 @@ const navItems = [
   { href: '/publish', label: '🚀 Pipeline' },
   { href: '/articles', label: '📰 Articles' },
   { href: '/tasks', label: '📋 Tasks' },
+  { href: '/stock-analysis', label: '📈 Stock' },
 ];
 
 export default function RootLayout({
