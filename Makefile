@@ -138,10 +138,17 @@ deploy-agent-engine:
 # All env defaults are baked in. Reads gcloud project. Idempotent on reruns
 # (CONFIRM_DEPLOY=y skips the [y/N] prompt).
 #
+# Auto-bakes GEAP_RESOURCE_NAME from deployed-agent-engines.txt (latest
+# entry) so the Cloud Run service's /api/stock-chat reaches the GEAP engine
+# deployed via `make workshop-deploy-agent` in Phase 1.5b. Falls back to
+# empty (service still boots, but stock-chat returns 500 with a clear
+# "GEAP_RESOURCE_NAME not set" message — see middleware.ts).
+#
 # Usage (5/9 BwAI 台中, advanced students who want their own UI):
 #     cd ~/digest-agent && nohup make workshop-deploy-web > /tmp/deploy-web.log 2>&1 &
 #
-# Override BASIC_AUTH_PASSWORD etc. via shell env if you don't want the workshop default.
+# Override BASIC_AUTH_PASSWORD / GEAP_RESOURCE_NAME etc. via shell env to
+# customize.
 workshop-deploy-web:
 	@PROJECT=$$(gcloud config get-value project 2>/dev/null) && \
 	if [ -z "$$PROJECT" ]; then \
@@ -149,6 +156,13 @@ workshop-deploy-web:
 	  exit 1; \
 	fi && \
 	echo "📦 Project: $$PROJECT" && \
+	GEAP_FROM_REGISTRY=""; \
+	if [ -f deployed-agent-engines.txt ]; then \
+	  GEAP_FROM_REGISTRY=$$(tail -1 deployed-agent-engines.txt | cut -f2); \
+	  echo "🔗 GEAP engine (auto from deployed-agent-engines.txt): $$GEAP_FROM_REGISTRY"; \
+	else \
+	  echo "⚠️  deployed-agent-engines.txt not found — GEAP_RESOURCE_NAME will be empty (Cloud Run /api/stock-chat will 500 until you run 'make workshop-deploy-agent' first or set GEAP_RESOURCE_NAME explicitly)"; \
+	fi && \
 	echo "🔧 Enabling APIs (idempotent)..." && \
 	gcloud services enable run.googleapis.com cloudbuild.googleapis.com storage.googleapis.com artifactregistry.googleapis.com --project=$$PROJECT && \
 	echo "🪣 Creating data bucket via setup-data-bucket (idempotent)..." && \
@@ -160,6 +174,7 @@ workshop-deploy-web:
 	LITESTREAM_GCS_BUCKET=$$PROJECT-data \
 	GCP_LOCATION=$${GCP_LOCATION:-us-central1} \
 	GEMINI_API_KEY=$${GEMINI_API_KEY:-placeholder-vertex-runtime} \
+	GEAP_RESOURCE_NAME=$${GEAP_RESOURCE_NAME:-$$GEAP_FROM_REGISTRY} \
 	BASIC_AUTH_USER=$${BASIC_AUTH_USER:-admin} \
 	BASIC_AUTH_PASSWORD=$${BASIC_AUTH_PASSWORD:-workshop2026} \
 	CONFIRM_DEPLOY=y \
