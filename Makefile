@@ -1,6 +1,6 @@
 .PHONY: help help-scripts install dev dev-shell test lint build run deploy deploy-workshop shell clean adk-web adk-run debug \
         setup-data-bucket deploy-web \
-        deploy-agent-engine invoke-agent-engine list-agent-engines \
+        deploy-agent-engine workshop-deploy-agent invoke-agent-engine list-agent-engines \
         setup-billing-alert deploy-dry-run \
         test-local test-local-e2e test-local-api-real \
         onboard-cloudshell smoke-cloudshell workshop-verify
@@ -23,8 +23,9 @@ help:
 	@echo "  make setup-data-bucket    Create GCS bucket for Litestream (one-time)"
 	@echo "  make setup-billing-alert  Monthly budget alarm (default \$$5; AMOUNT=N to override)"
 	@echo "  make deploy-web           Deploy apps/web (Next.js + Litestream) to Cloud Run"
-	@echo "  make deploy-agent-engine  Deploy ADK agents to Vertex AI Agent Engine (GEAP)"
-	@echo "  make invoke-agent-engine  Invoke deployed GEAP for a smoke run"
+	@echo "  make deploy-agent-engine     Deploy ADK agents to Vertex AI Agent Engine (GEAP)"
+	@echo "  make workshop-deploy-agent   One-shot: enable APIs + bucket + GEAP deploy (5/9 default)"
+	@echo "  make invoke-agent-engine     Invoke deployed GEAP for a smoke run"
 	@echo "  make list-agent-engines   List Reasoning Engines in current GCP project"
 	@echo ""
 	@echo "── Local dev ──"
@@ -131,6 +132,35 @@ deploy-agent-engine:
 	fi
 	uv sync --extra geap
 	uv run python -m agents.stock.deploy_to_agent_engine
+
+# Workshop one-shot: enable APIs + create staging bucket + deploy GEAP engine.
+# All env defaults are baked in. Reads gcloud project. Idempotent on reruns
+# (FORCE_DELETE=y skips the delete prompt).
+#
+# Usage (5/9 BwAI 台中):
+#     cd ~/digest-agent && nohup make workshop-deploy-agent > /tmp/geap-deploy.log 2>&1 &
+#
+# Override DIGEST_API_URL etc. via shell env if you don't want the workshop default.
+workshop-deploy-agent:
+	@PROJECT=$$(gcloud config get-value project 2>/dev/null) && \
+	if [ -z "$$PROJECT" ]; then \
+	  echo "❌ gcloud project not set. Run: gcloud config set project YOUR_PROJECT"; \
+	  exit 1; \
+	fi && \
+	echo "📦 Project: $$PROJECT" && \
+	echo "🔧 Enabling APIs (idempotent)..." && \
+	gcloud services enable aiplatform.googleapis.com storage.googleapis.com cloudbuild.googleapis.com --project=$$PROJECT && \
+	echo "🪣 Creating staging bucket (idempotent)..." && \
+	gsutil mb -l us-central1 gs://$$PROJECT-agents 2>/dev/null || echo "  (bucket already exists or no perms)" && \
+	echo "🚀 Deploying agent engine..." && \
+	GCP_PROJECT=$$PROJECT \
+	STAGING_BUCKET=gs://$$PROJECT-agents \
+	GEMINI_API_KEY=$${GEMINI_API_KEY:-placeholder-vertex-runtime} \
+	DIGEST_API_URL=$${DIGEST_API_URL:-https://digest-agent-web-lryiyk5zqa-uc.a.run.app} \
+	DIGEST_API_USER=$${DIGEST_API_USER:-admin} \
+	DIGEST_API_PASSWORD=$${DIGEST_API_PASSWORD:-digest2026bwaijimmy} \
+	FORCE_DELETE=$${FORCE_DELETE:-y} \
+	$(MAKE) deploy-agent-engine
 
 # Invoke the latest deployed Agent Engine (reads deployed-agent-engines.txt last line)
 # Direct: ./scripts/invoke-agent-engine.sh "<message>"
