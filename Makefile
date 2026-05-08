@@ -1,6 +1,6 @@
 .PHONY: help help-scripts install dev dev-shell test lint build run deploy deploy-workshop shell clean adk-web adk-run debug \
         setup-data-bucket deploy-web \
-        deploy-agent-engine workshop-deploy-agent invoke-agent-engine list-agent-engines \
+        deploy-agent-engine workshop-deploy-agent workshop-deploy-web invoke-agent-engine list-agent-engines \
         setup-billing-alert deploy-dry-run \
         test-local test-local-e2e test-local-api-real \
         onboard-cloudshell smoke-cloudshell workshop-verify
@@ -22,7 +22,8 @@ help:
 	@echo "── Deploy (Cloud Run + GEAP) ──"
 	@echo "  make setup-data-bucket    Create GCS bucket for Litestream (one-time)"
 	@echo "  make setup-billing-alert  Monthly budget alarm (default \$$5; AMOUNT=N to override)"
-	@echo "  make deploy-web           Deploy apps/web (Next.js + Litestream) to Cloud Run"
+	@echo "  make deploy-web              Deploy apps/web (Next.js + Litestream) to Cloud Run"
+	@echo "  make workshop-deploy-web     One-shot: enable APIs + bucket + deploy-web (進階學員)"
 	@echo "  make deploy-agent-engine     Deploy ADK agents to Vertex AI Agent Engine (GEAP)"
 	@echo "  make workshop-deploy-agent   One-shot: enable APIs + bucket + GEAP deploy (5/9 default)"
 	@echo "  make invoke-agent-engine     Invoke deployed GEAP for a smoke run"
@@ -132,6 +133,37 @@ deploy-agent-engine:
 	fi
 	uv sync --extra geap
 	uv run python -m agents.stock.deploy_to_agent_engine
+
+# Workshop one-shot: enable APIs + create data bucket + deploy apps/web to Cloud Run.
+# All env defaults are baked in. Reads gcloud project. Idempotent on reruns
+# (CONFIRM_DEPLOY=y skips the [y/N] prompt).
+#
+# Usage (5/9 BwAI 台中, advanced students who want their own UI):
+#     cd ~/digest-agent && nohup make workshop-deploy-web > /tmp/deploy-web.log 2>&1 &
+#
+# Override BASIC_AUTH_PASSWORD etc. via shell env if you don't want the workshop default.
+workshop-deploy-web:
+	@PROJECT=$$(gcloud config get-value project 2>/dev/null) && \
+	if [ -z "$$PROJECT" ]; then \
+	  echo "❌ gcloud project not set. Run: gcloud config set project YOUR_PROJECT"; \
+	  exit 1; \
+	fi && \
+	echo "📦 Project: $$PROJECT" && \
+	echo "🔧 Enabling APIs (idempotent)..." && \
+	gcloud services enable run.googleapis.com cloudbuild.googleapis.com storage.googleapis.com artifactregistry.googleapis.com --project=$$PROJECT && \
+	echo "🪣 Creating data bucket via setup-data-bucket (idempotent)..." && \
+	GCP_PROJECT=$$PROJECT \
+	LITESTREAM_GCS_BUCKET=$$PROJECT-data \
+	$(MAKE) setup-data-bucket && \
+	echo "🚀 Deploying apps/web to Cloud Run..." && \
+	GCP_PROJECT=$$PROJECT \
+	LITESTREAM_GCS_BUCKET=$$PROJECT-data \
+	GCP_LOCATION=$${GCP_LOCATION:-us-central1} \
+	GEMINI_API_KEY=$${GEMINI_API_KEY:-placeholder-vertex-runtime} \
+	BASIC_AUTH_USER=$${BASIC_AUTH_USER:-admin} \
+	BASIC_AUTH_PASSWORD=$${BASIC_AUTH_PASSWORD:-workshop2026} \
+	CONFIRM_DEPLOY=y \
+	$(MAKE) deploy-web
 
 # Workshop one-shot: enable APIs + create staging bucket + deploy GEAP engine.
 # All env defaults are baked in. Reads gcloud project. Idempotent on reruns
