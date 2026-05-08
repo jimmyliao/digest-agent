@@ -57,22 +57,23 @@ echo 'export GEMINI_API_KEY=AIza...' >> ~/.bashrc
 
 ---
 
-## Magic Prompt 0 — One-command verify ⭐ 推薦第一次跑這個
+## Magic Prompt 0 — Idempotent clone + verify ⭐ 推薦第一次跑這個
 
-這把 Magic Prompts 1 + 2 包成 `make workshop-verify` 一個指令。如果只想知道
-「這台 Cloud Shell 環境跑得起來嗎？」就跑這個。
+這把 clone + Magic Prompts 1 + 2 包成 `make workshop-verify` 一個指令。如果只想知道
+「這台 Cloud Shell 環境跑得起來嗎？」就跑這個。**會 idempotent 處理舊的 digest-agent 目錄**（搬到 `~/_old/` 保留），重跑安全。
+
+> ⚠️ 第一次跑時 cwd 在 `~`、還沒 clone，**不能用 `@filename` 指 repo 內檔案**——這個 prompt 自包含所有指令。
 
 ```bash
-gemini -p "@GEMINI.md 我在 Google Cloud Shell。請幫我跑 make workshop-verify，
-過程會：
-1. 安裝 bun + uv（已裝會跳過）
-2. bun install + uv sync 把所有依賴裝好
-3. scaffold apps/web/.env.local（含 BASIC_AUTH_DISABLED=1）
-4. 在 background 起 apps/web dev server
-5. 等 port 3000 起來後 curl /api/health 確認 200
-6. 自動關掉 dev server，印 PASS/FAIL
+gemini -p "我在 Cloud Shell（第一次或重複跑 workshop）。請：
+1. command -v rg >/dev/null || sudo apt-get install -y ripgrep（gemini-cli 需要，缺了會 fallback warn）
+2. mkdir -p ~/_old
+3. 如果 ~/digest-agent 已存在 → mv ~/digest-agent ~/_old/digest-agent-\$(date +%Y%m%d-%H%M%S)（保留舊版備查）
+4. cd ~ && git clone https://github.com/jimmyliao/digest-agent.git
+5. cd digest-agent && make workshop-verify
+   過程會：bun + uv 裝好、bun install + uv sync、scaffold apps/web/.env.local（BASIC_AUTH_DISABLED=1）、bg 起 dev server、curl /api/health、自動關 dev、印 PASS/FAIL
 
-跑完告訴我：bun 版本、uv 版本、health endpoint 回傳、是否全部 ✅"
+跑完告訴我：rg 版本、bun 版本、uv 版本、health endpoint 回傳、是否全部 ✅"
 ```
 
 **預期結果**：終端最後印
@@ -185,18 +186,19 @@ gemini -p "@GEMINI.md 請幫我把 apps/web/ deploy 到 Cloud Run。已知：
 
 ---
 
-## Magic Prompt 5 —（進階）GEAP agent runtime 部署
+## Magic Prompt 5 — GEAP agent runtime 部署（5/9 Phase 1.5b 用）
 
-> 不在 5/9 workshop 範疇，留給 5/18 AIA showcase 路徑。
+> 5/9 workshop default：在 Phase 1.5 認證後背景跑這個，~3-5 min 完成，Phase 4 接 dev server 用。
+> 5/18 AIA showcase 進階路徑同樣使用這個 prompt（再加上 Cloud Run UI 串接）。
 
 ```bash
-gemini -p "@GEMINI.md Cloud Run UI 已部署（URL=https://...）。
-現在請幫我把 ADK SequentialAgent 部署到 GEAP（Vertex AI Agent Engine）：
-1. 確認 .env.deploy 有 STAGING_BUCKET=gs://YOUR_PROJECT_ID-agents（沒有就建：gsutil mb gs://YOUR_PROJECT_ID-agents）
-2. 把 Cloud Run URL 寫進 .env.deploy 的 DIGEST_API_URL=
-3. 跑 make deploy-agent-engine（~5-10 min）
-4. 跑 make invoke-agent-engine 確認 4 個 agent 串流出來
-5. 印出 https://console.cloud.google.com/agent-platform/runtimes Console URL
+gemini -p "@GEMINI.md Phase 1.5 Vertex AI 認證已設好。請幫我背景部署 ADK SequentialAgent 到 GEAP（Vertex AI Agent Engine），Phase 4 stock analysis 會用：
+1. gcloud services enable storage.googleapis.com cloudbuild.googleapis.com（aiplatform 已啟）
+2. PROJECT=\$(gcloud config get-value project)，gsutil mb -l us-central1 gs://\$PROJECT-agents（已存在跳過）
+3. uv sync --extra geap
+4. 用 placeholder GEMINI_API_KEY=not-used-engine-runs-on-vertex 跑 nohup make deploy-agent-engine 到 /tmp/geap-deploy.log（runtime 走 Vertex AI，不需要真 key）
+5. 印背景 PID + log path
+完成後（5/18 AIA path）：跑 make invoke-agent-engine 確認 4 個 agent 串流，印 https://console.cloud.google.com/vertex-ai/agents/agent-engines Console URL
 "
 ```
 
@@ -221,7 +223,7 @@ gemini -p "@GEMINI.md Cloud Run UI 已部署（URL=https://...）。
 |------|------|
 | `bun: command not found` 即使跑完 onboarding | `source ~/.bashrc` 或開新 terminal tab |
 | `Server misconfigured: BASIC_AUTH_USER not set` | `.env.local` 加 `BASIC_AUTH_DISABLED=1` 或設 `BASIC_AUTH_USER` + `BASIC_AUTH_PASSWORD` |
-| `/api/stock-chat 500 GEAP_RESOURCE_NAME not set` | 還沒跑 prompt 5；本地測試的話可以先忽略此 endpoint |
+| `/api/stock-chat 500 GEAP_RESOURCE_NAME not set` | 跑 Magic Prompt 5（Phase 1.5b）背景部署後，跑 Magic Prompt 4-pre 把 resource name 寫進 .env.local 並重啟 dev server |
 | `Vertex AI permission denied` / 401-403 from `aiplatform.googleapis.com` | `gcloud services enable aiplatform.googleapis.com`；確認 onramp project 有 Vertex User role；Cloud Shell 重開 tab 讓 ADC 重新拿 token |
 | Cloud Build `Unsupported URL Type "workspace:"` | 你 fork 的版本太舊，pull main 拿 PR #10/#11/#12 後的 Dockerfile |
 | Cold start `Cannot find module './361.js'` (dev mode only) | `rm -rf apps/web/.next && bun run dev --turbopack` |

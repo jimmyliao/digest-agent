@@ -168,7 +168,7 @@ gemini -p "@GEMINI.md 我在 Google Cloud Shell，請依序幫我執行以下指
 |------|------|---------|
 | `GEMINI_API_KEY` | ✅ | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
 | `GCP_PROJECT_ID` | Deploy 才需要 | Cloud Shell 左上角 project selector |
-| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | 選填（建議 demo 用）| @BotFather，30 秒取得 |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | 選填（建議 demo 用）| [@BotFather](https://t.me/botfather)，30 秒取得 |
 
 ### Known Issues / Notes
 - 3 retry-mock tests in `tests/test_gemini_summarizer.py` fail due to SDK API mismatch — pre-existing, not regressions

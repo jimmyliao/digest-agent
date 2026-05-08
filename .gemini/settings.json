@@ -4,43 +4,51 @@
       "enabled": true
     }
   },
-
   "hooks": {
     "BeforeTool": [
       {
         "command": "bash",
-        "args": [".gemini/hooks/guard_rails.sh"],
+        "args": [
+          ".gemini/hooks/guard_rails.sh"
+        ],
         "comment": "攔截對 data/ 和 app.py 的危險操作"
       },
       {
         "command": "node",
-        "args": [".gemini/hooks/app-protection.js"],
+        "args": [
+          ".gemini/hooks/app-protection.js"
+        ],
         "comment": "防止 rm/mv src/app.py"
       }
     ],
     "BeforeModel": [
       {
         "command": "bash",
-        "args": ["scripts/sys-load.sh"],
+        "args": [
+          "scripts/sys-load.sh"
+        ],
         "comment": "注入即時 CPU 負載到 context（跨平台：macOS + Linux/Cloud Shell）"
       }
     ]
   },
-
   "mcpServers": {
     "github": {
-      "url": "https://gitmcp.io/jimmyliao/digest-agent",
-      "comment": "GitMCP：無需 token，直接讀 digest-agent public repo 的 issue、code、docs"
+      "url": "https://gitmcp.io/jimmyliao/digest-agent"
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
-      "comment": "Filesystem MCP：讓 Gemini 以結構化方式讀寫專案檔案"
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ]
     },
     "cloudrun": {
       "command": "npx",
-      "args": ["-y", "@google/mcp-cloudrun"],
-      "comment": "Cloud Run MCP：讓 Gemini 直接管理和部署 Google Cloud Run 服務（需先 gcloud auth login）"
+      "args": [
+        "-y",
+        "@google/mcp-cloudrun"
+      ]
     }
   }
 }
