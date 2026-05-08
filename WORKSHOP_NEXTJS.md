@@ -196,19 +196,21 @@ Step 2（在 gemini interactive 裡貼這段）：
 
 ## Magic Prompt 5 — GEAP agent runtime 部署（5/9 Phase 1.5b 用）
 
-> 5/9 workshop default：在 Phase 1.5 認證後背景跑這個，~3-5 min 完成，Phase 4 接 dev server 用。
-> 5/18 AIA showcase 進階路徑同樣使用這個 prompt（再加上 Cloud Run UI 串接）。
+> 5/9 workshop default：在 Phase 1.5 認證後背景跑這個，~5-10 min 完成，Phase 4 接 dev server 用。
+> 5/18 AIA showcase 進階路徑同樣使用這個流程（再加上 Cloud Run UI 串接）。
 
-先 `gemini` 進 interactive，再貼下面：
+**這段不用 magic prompt — 改用一條 Make target**（`workshop-deploy-agent` 內建 enable APIs + 建 bucket + 灌好所有 env、含 `FORCE_DELETE=y` 重跑安全）：
+
+```bash
+cd ~/digest-agent
+nohup make workshop-deploy-agent > /tmp/geap-deploy.log 2>&1 &
+echo "Deploy PID: $!"
+sleep 5 && tail -10 /tmp/geap-deploy.log
 ```
-@GEMINI.md Phase 1.5 Vertex AI 認證已設好。請幫我背景部署 ADK SequentialAgent 到 GEAP（Vertex AI Agent Engine），Phase 4 stock analysis 會用：
-1. gcloud services enable storage.googleapis.com cloudbuild.googleapis.com（aiplatform 已啟）
-2. PROJECT=$(gcloud config get-value project)，gsutil mb -l us-central1 gs://$PROJECT-agents（已存在跳過）
-3. uv sync --extra geap
-4. 用 placeholder GEMINI_API_KEY=not-used-engine-runs-on-vertex 跑 nohup make deploy-agent-engine 到 /tmp/geap-deploy.log（runtime 走 Vertex AI，不需要真 key）
-5. 印背景 PID + log path
-完成後（5/18 AIA path）：跑 make invoke-agent-engine 確認 4 個 agent 串流，印 https://console.cloud.google.com/vertex-ai/agents/agent-engines Console URL
-```
+
+完成後（5/18 AIA path）：`make invoke-agent-engine` 確認 4-agent 串流，Console URL：https://console.cloud.google.com/vertex-ai/agents/agent-engines?project=YOUR_PROJECT
+
+**為什麼不用 magic prompt 包這段**：實測 gemini-cli safety 會擋 `$()` command substitution，gemini 每跑一次要 5+ 輪 fallback 才繞過。infrastructure setup 用一條 deterministic Make target 比 prompt 自癒可靠 10 倍。Magic prompt 留給 Phase 1（`make workshop-verify` 第一次貼，學員不知該打啥）+ Phase 4 wire-engine（簡單 sed-replace）。
 
 ---
 
