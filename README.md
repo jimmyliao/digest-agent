@@ -61,8 +61,7 @@ make dev                                       # http://localhost:8080
 
 Cloud Shell shortcut (no setup): `make dev-shell` (port 8080 with Web Preview). Battle-tested at the 4/18 桃園 workshop — keep it as your safety net.
 
-For magic-prompt onboarding via Gemini CLI, see [WORKSHOP_NEXTJS.md](./WORKSHOP_NEXTJS.md).
-For Streamlit workshop magic prompts, see [CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md).
+For the 5/9 BwAI Cloud Shell workshop runbook (Magic Prompt + copy-paste bash), see [CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md).
 For a catalog of every script (purpose + `make` wrapper), see [scripts/README.md](./scripts/README.md).
 
 **Alternative — use with AI Agent CLI:**
@@ -365,8 +364,7 @@ make dev                                       # http://localhost:8080
 
 Cloud Shell 一鍵起：`make dev-shell`（port 8080，可開 Web Preview）。4/18 桃園 workshop 實戰過 — 留作安全網。
 
-Magic-prompt 版（Gemini CLI 帶你裝）：[WORKSHOP_NEXTJS.md](./WORKSHOP_NEXTJS.md)。
-Streamlit Magic-prompt：[CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md)。
+5/9 BwAI Cloud Shell workshop runbook（Magic Prompt + copy-paste bash）：[CLOUD_SHELL_WORKSHOP.md](./CLOUD_SHELL_WORKSHOP.md)。
 所有 script 的用途總覽：[scripts/README.md](./scripts/README.md)。
 
 **也可以搭配 AI Agent CLI 使用：**

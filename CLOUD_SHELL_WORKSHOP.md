@@ -1,411 +1,236 @@
 # CLOUD_SHELL_WORKSHOP.md
-# AI 新聞小幫手工作坊 — Streamlit 路徑（**5/9 fallback / backup**）
+# AI 新聞小幫手工作坊（5/9 BwAI 台中 / 90 min）
 
-> ⚠️ **5/9 BwAI 台中 default = Next.js path**（見 [`WORKSHOP_NEXTJS.md`](./WORKSHOP_NEXTJS.md)，
-> 一行 `make workshop-verify` 完成 onboard + smoke）。
->
-> 這份是 **fallback runbook** — 學員若在 Next.js 卡住（bun install 失敗、Cloud Run UI
-> 拉不起來、GEAP 沒部署成功等），用 Streamlit 路徑直接退回 Python only、port 8080，
-> 一樣能跑完 4-agent 個股分析。
->
-> Streamlit 路徑經過 4/18 桃園 workshop 實戰、低工具鏈（uv only）— 是穩定的安全網。
-
-打開 Google Cloud Shell，輸入 `gemini` 進入 interactive mode，依序貼上 Magic Prompt。
+Cloud Shell 開好後，照下面 Phase 1 → 4 順序貼指令。Phase 1 用 `gemini` interactive，其餘直接 bash copy-paste。
 
 ---
 
-## 🔄 重新開啟 Cloud Shell（已 clone 過）
-> Cloud Shell session 斷掉後，重新啟動 Streamlit
+## 你會做到的
 
-```
-@CLOUD_SHELL_WORKSHOP.md 我重新開啟 Cloud Shell，專案已經 clone 過了。
-請幫我重啟 Streamlit 並確認 Web Preview 可用。
-```
-
-**Gemini 會執行：**
-1. `cd ~/digest-agent && source ~/.bashrc`
-2. `kill $(lsof -ti:8080) 2>/dev/null`（清掉舊 process）
-3. `nohup make dev-shell > /tmp/streamlit.log 2>&1 &`
-4. 確認 port 8080 回應 200 → 提示開 Web Preview
+| Phase | 做什麼 | 預估 |
+|------|------|------|
+| 1 | Clone repo + 環境驗證（Magic Prompt） | 5 min |
+| 1.5 | Vertex AI auth 寫進 `.env.local` | 1 min |
+| 1.5b | 部署 ADK Agent 到 Vertex Agent Engine（背景跑） | 5–10 min |
+| 2 | 起 Next.js dev server（port 3000） | 30 sec |
+| 3 | Pipeline：Fetch 新聞 → Summarize | 5 min |
+| 4 | Stock：4-agent 個股分析 stream | 10 min |
+| M4 | （進階）部署自家 Cloud Run UI | 10 min |
 
 ---
 
-## ✨ Phase 1 Magic Prompt
-> 安裝環境 + Clone + 啟動 Streamlit + Web Preview
+## 開場準備（2 min）
 
-```
-請幫我依序執行（每步確認成功再繼續，用繁體中文回覆）：
-1. curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
-2. git clone https://github.com/jimmyliao/digest-agent.git && cd digest-agent
-3. uv sync --all-extras
-4. 問我要 GEMINI_API_KEY（從 https://aistudio.google.com/app/apikey 取得，沒有可跳過進 Mock 模式）
-5. cp .env.example .env，然後用 sed 把 .env 裡的 GEMINI_API_KEY=your-gemini-api-key-here 替換成我提供的 key。同時把 GOOGLE_API_KEY=your-gemini-api-key-here 也替換成同樣的 key（ADK 需要）
-6. cat .env | grep API_KEY 確認寫入成功
-7. 驗證 API Key 可用：source .env && uv run python -c "from google.genai import Client; c=Client(api_key='$GEMINI_API_KEY'); r=c.models.generate_content(model='gemini-2.5-flash',contents='說 OK'); print('API Key 驗證成功：', r.text[:20])"。如果失敗，告訴我 key 可能無效，但可以繼續（Mock 模式）
-8. nohup make dev-shell > /tmp/streamlit.log 2>&1 &
-9. sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
-10. 看到 200 後，告訴我點 Cloud Shell 右上角 Web Preview → port 8080
-```
+打開 [console.cloud.google.com](https://console.cloud.google.com)，右上角 `>_` 開 Cloud Shell。
 
-**預期結果：**
-- Gemini 會依序執行安裝、Clone、啟動
-- 中途詢問你的 `GEMINI_API_KEY`（沒有也可以跳過進 Mock 模式）
-- 最後看到 `200` 回應，Gemini 提示你點 **Web Preview → port 8080**
-- 瀏覽器新分頁出現 Digest Agent Dashboard
-- 可以 Fetch 新聞、Summarize 看 Gemini 摘要
-
----
-
-## ✨ Phase 2 Magic Prompt（選做）
-> 設定 Telegram Bot，讓部署後可以直接推送新聞
-
-```
-@CLOUD_SHELL_WORKSHOP.md Phase 1 完成了，請帶我設定 Telegram Bot：
-取得 BotFather token、取得 Chat ID、在 Dashboard 填入設定。
-```
-
-**預期結果：**
-- Gemini 引導你開 Telegram → @BotFather 取得 token
-- 再開 @userinfobot 取得 Chat ID
-- 填入 Dashboard ⚙️ 渠道設定後，Publish 一篇文章，Telegram 收到推送訊息
-
----
-
-## ✨ Phase 3 Magic Prompt
-> 部署到 Cloud Run，拿到公開 URL
-
-```
-@CLOUD_SHELL_WORKSHOP.md 請帶我把 digest-agent 部署到 Cloud Run。
-我的 GCP Project ID 是：（填入你的 Project ID）
-```
-
-**預期結果：**
-- Gemini 啟用必要 GCP API、執行 `make deploy-workshop`
-- Cloud Build 打包約 3-5 分鐘
-- 拿到一個 `https://digest-agent-workshop-xxxx.asia-east1.run.app` 公開 URL
-- 任何人用瀏覽器打開都能看到 Dashboard，不需要 Cloud Shell
-
----
-
-## ✨ Phase 4 Magic Prompt（進階加碼）
-> 從「改一個 prompt」到「讓多個 AI 各司其職」— ADK Multi-Agent 個股分析
-
-**銜接語（講師口頭）：**
-> 「剛才你們用 Gemini CLI 改了摘要的 prompt，讓一個 AI 做得更好。
-> 但如果分析需要多種專業呢？新聞、產業、市場各需要不同專家。
-> 這就是 Multi-Agent 的場景 — 同一個 repo，我們來看看怎麼升級。」
-
-```
-@CLOUD_SHELL_WORKSHOP.md Phase 1-3 完成了，請帶我體驗 Phase 4：
-ADK Multi-Agent 個股分析。先 Fetch 財經新聞，再到個股分析頁面分析台積電。
-```
-
-**預期結果：**
-
-**Step 1 — 先 Fetch 財經新聞（餵資料給 agent）：**
-- 到 publish 頁面 → Fetch，抓取最新財經新聞（Yahoo 台股、TWSE 證交所、TechNews）
-- 左側選單已有「📈 個股分析」新頁面（同一個 Streamlit app）
-
-**Step 2 — 個股分析（Multi-Agent 協作）：**
-- 點左側「📈 個股分析」
-- 輸入「台積電AI晶片供應鏈」→ 看到完整分析報告（新聞 × 產業 × 市場 × 綜合評估）
-- 「注意看新聞面 — 來源是剛才 Fetch 的 Yahoo、證交所，同一批資料被 agent 重新利用」
-
-**Step 3 — 展開 Agent 協作細節（內建 DevTools）：**
-- 報告下方點「🔍 Agent 協作細節（DevTools）」
-- 看到每個 agent 的 tool 呼叫（`search_db_articles` 從 DB 讀取 Phase 1 的新聞）
-- 「這就像 Chrome F12 — 不用另開工具，直接在同一個頁面看 agent 怎麼協作」
-
-### 學習重點
-
-**從 digest-agent 到 multi-agent 的升級路徑（3 min）：**
-```
-Phase 1-3 你做的事                    Phase 4 升級後
-─────────────────                    ─────────────────
-1 個 AI（Gemini）                    4 個 AI agent 各司其職
-改 prompt 調整輸出                   每個 agent 有專屬 instruction + tools
-src/llm/ 直接呼叫                    ADK SequentialAgent 管理執行順序
-Streamlit page 1-3                   Streamlit page 4（同一個 app）
-Phase 1 Fetch 的新聞                 → Phase 4 news_collector 從 DB 讀取
-```
-
-**ADK 核心概念（3 min）：**
-- Agent = LLM + instruction + tools（像一位有專長的分析師）
-- SequentialAgent = 保證每個 agent 都執行（框架層保證，不靠 prompt）
-- output_key = agent 之間的便利貼（session state 共享分析結果）
-- Runner = 執行環境（Streamlit 透過 Runner 呼叫整個 pipeline）
-
-**ADK Session State — agent 之間的溝通（3 min）：**
-```
-SequentialAgent 依序執行：
-1. news_collector    → output_key: "news_analysis"     → 寫入 session state
-2. industry_analyst  → output_key: "industry_analysis"  → 寫入 session state
-3. market_analyst    → output_key: "market_analysis"    → 寫入 session state
-4. stock_orchestrator → 讀取三個 output_key             → 整合成最終報告
-```
-
-**資料流串接（Phase 1 → Phase 4）：**
-```
-Phase 1: Fetch → RSS (Yahoo台股/TWSE/TechNews) → 存入 DB (174篇)
-                                                       ↓ 共用
-Phase 4: news_collector → search_db_articles (從 DB 搜尋) → 找到台積電 5 篇
-         → industry_analyst (LLM 產業知識)
-         → market_analyst (LLM 市場分析)
-         → stock_orchestrator (整合報告)
-```
-
-**動手改（5 min，選做）：**
-- 打開 `agents/stock/industry_agent.py`
-- 修改 instruction 加入「特別關注 AI 晶片需求」
-- 重啟後再分析台積電，看報告差異
-
-**進階：打開 ADK DevTools（講師選做）：**
-> adk web 是 ADK 內建的開發者工具，可以看到更詳細的 event trace、LLM span。
-> Workshop 不需要帶，但講師想展示幕後可以用。
 ```bash
-nohup make adk-web > /tmp/adk.log 2>&1 &
-# Web Preview → 改 port 8000
+# 確認 onramp credit project 已選
+gcloud config get-value project
+
+# 啟用 Vertex AI（onramp 通常已預啟用，跑一下保險）
+gcloud services enable aiplatform.googleapis.com
+
+# 持久化 project + region 到 shell（gemini-cli + apps/web 都會讀）
+PROJECT=$(gcloud config get-value project)
+echo "export GOOGLE_CLOUD_PROJECT=$PROJECT" >> ~/.bashrc
+echo "export GOOGLE_CLOUD_LOCATION=us-central1" >> ~/.bashrc
+source ~/.bashrc
 ```
 
 ---
 
----
+## Phase 1 — Clone + Verify（Magic Prompt）
 
-## Appendix：給 Gemini CLI 的執行腳本
-
-> 你是「AI 新聞小幫手」工作坊的 AI 助教。
-> 請用繁體中文，親切但精準地引導學員。
-> **每個步驟執行後確認成功再繼續，不要一次丟出所有指令。**
-
-### Phase 1 執行細節
-
-**步驟 0 — 確認 Gemini CLI**
-```bash
-gemini --version
-```
-- ✅ 有版本號 → 繼續
-- ❌ `node: No such file or directory` → 告訴學員點右上角 ⋮ → **重新啟動**
-
-**步驟 1 — 安裝 uv**
-```bash
-curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
-uv --version
-```
-
-**步驟 2 — Clone + 安裝**
-```bash
-git clone https://github.com/jimmyliao/digest-agent.git
-cd digest-agent
-uv sync --all-extras
-```
-
-**步驟 3 — 設定 API Key（寫入 .env）**
-
-詢問學員：「請提供你的 GEMINI_API_KEY，可從 https://aistudio.google.com/app/apikey 免費取得。沒有也可以，會進 Mock 模式。」
+進 gemini interactive：
 
 ```bash
-cp .env.example .env
-sed -i 's/GEMINI_API_KEY=your-gemini-api-key-here/GEMINI_API_KEY=學員的key/' .env
-sed -i 's/GOOGLE_API_KEY=your-gemini-api-key-here/GOOGLE_API_KEY=學員的key/' .env
-cat .env | grep API_KEY   # 確認寫入成功
+gemini
 ```
 
-**步驟 3.5 — 驗證 API Key（快速測試）**
-```bash
-source .env && uv run python -c "
-from google.genai import Client
-c = Client(api_key='$GEMINI_API_KEY')
-r = c.models.generate_content(model='gemini-2.5-flash', contents='說 OK')
-print('API Key 驗證成功：', r.text[:20])
-"
+進 auth 選單時選 **`3. Vertex AI`**（onramp 學員）或 **`2. Use Gemini API Key`**（fallback）。
+
+等出現 `> Type your message` 後，貼下面：
+
 ```
-- ✅ 看到「API Key 驗證成功」→ 繼續
-- ❌ 失敗 → 告訴學員 key 可能無效，可繼續（Mock 模式）
+我在 Cloud Shell（第一次或重複跑 workshop）。請：
+1. command -v rg >/dev/null || sudo apt-get install -y ripgrep
+2. mkdir -p ~/_old
+3. 如果 ~/digest-agent 已存在 → mv ~/digest-agent ~/_old/digest-agent-$(date +%Y%m%d-%H%M%S)
+4. cd ~ && git clone https://github.com/jimmyliao/digest-agent.git
+5. cd digest-agent && make workshop-verify
 
-**步驟 4 — 啟動 Streamlit**
-```bash
-nohup make dev-shell > /tmp/streamlit.log 2>&1 &
-sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
+跑完告訴我：rg / bun / uv 版本、health endpoint 回傳、是否全部 ✅
 ```
-看到 `200` 才繼續。有錯：`tail -20 /tmp/streamlit.log`。
 
-**步驟 5 — Web Preview**
+**預期**：終端最後印
+```
+✅ Cloud Shell smoke test PASSED
+🎉 Workshop environment verified end-to-end.
+```
 
-告訴學員：「點 Cloud Shell 右上角 **Web Preview（眼睛圖示）** → **Preview on port 8080**，新分頁出現 Dashboard 就成功！
-試試：🚀 發佈控制 → Fetch → 勾選文章 → Summarize。」
-
-完成後告訴學員：「✅ Phase 1 完成！請貼 Phase 2 或 Phase 3 Magic Prompt 繼續。」
+完成後 Ctrl+C 兩下退出 gemini，回到一般 shell。
 
 ---
 
-### Phase 2 執行細節（Telegram）
-
-告訴學員：
-
-**取得 Bot Token（30 秒）：**
-1. Telegram 搜尋 `@BotFather` → `/newbot` → 取得 API Token
-
-**取得 Chat ID（10 秒）：**
-1. Telegram 搜尋 `@userinfobot` → 傳任意訊息 → 取得 `Id`
-
-**重要：** 搜尋你的 Bot → 點 **開始（Start）**，否則推送會出現 `chat not found`。
+## Phase 1.5 — Vertex AI auth 寫進 dev env
 
 ```bash
-export TELEGRAM_BOT_TOKEN=你的token
-export TELEGRAM_CHAT_ID=你的chat-id
+cd ~/digest-agent
+echo "GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT" >> apps/web/.env.local
+echo "GOOGLE_CLOUD_LOCATION=us-central1" >> apps/web/.env.local
+tail -3 apps/web/.env.local
 ```
-
-或引導學員在 Dashboard 設定：**⚙️ 渠道設定 → Telegram → 填入 → 💾 儲存到 DB**。
-
-完成後告訴學員：「✅ Telegram 設定完成！請貼 Phase 3 Magic Prompt 部署到雲端。」
 
 ---
 
-### Phase 3 執行細節（Cloud Run）
-
-詢問學員的 GCP Project ID（Cloud Shell 左上角可以看到）。
+## Phase 1.5b — 部署 ADK Agent 到 Vertex Agent Engine（背景）
 
 ```bash
-gcloud config set project 學員的project-id
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-GEMINI_API_KEY=$GEMINI_API_KEY make deploy-workshop
+cd ~/digest-agent
+nohup make workshop-deploy-agent > /tmp/geap-deploy.log 2>&1 &
+echo "Deploy PID: $!"
 ```
 
-部署約 3-5 分鐘。完成後：
+觀察進度（每 30 秒會 print elapsed）：
+
 ```bash
-gcloud run services describe digest-agent-workshop --region asia-east1 --format 'value(status.url)'
+tail -f /tmp/geap-deploy.log
 ```
 
-驗證並告訴學員：「🎉 恭喜！Cloud Run URL 可以分享給任何人！」
+等到看到 `✅ Deployed: projects/.../reasoningEngines/<NEW_ID>` 後 Ctrl+C 退 tail。
+
+> **約 5–10 min**。可以平行做 Phase 2 + 3。
 
 ---
 
-### Phase 3 補充：Cloud Run + SQLite 限制（給好奇的學員）
+## Phase 2 — 起 Next.js dev server
 
-**為什麼 demo 用 SQLite 寫到 `/tmp` 就夠？**
+```bash
+cd ~/digest-agent/apps/web
+nohup bun run dev > /tmp/dev.log 2>&1 &
+sleep 6
+curl -s http://localhost:3000/api/health && echo
+```
 
-- Cloud Run 容器除 `/tmp` 外是 read-only 檔案系統
-- `make deploy-workshop` 已自動設 `DATABASE_URL=sqlite:////tmp/digest.db`
-- 單人 demo、現場按 Fetch 看摘要的場景跑得起來
+看到 `{"status":"ok","db":true,...}` → 點 Cloud Shell 右上角 **Web Preview** → 改 port 3000，新分頁開 Pipeline 頁面。
 
-**但這是 ephemeral，要先講清楚**：
+---
 
-| 場景 | 結果 |
+## Phase 3 — Pipeline（RSS → Summarize）
+
+在 Web Preview 頁面：
+
+1. 點 **🚀 Pipeline**
+2. **Fetch** → 等 ~10 秒，看到 `Fetched: 100+ articles`
+3. 切到 **📰 Articles** → 勾選 3 篇
+4. 回 Pipeline → **Summarize** → 看 Gemini 串流摘要進來
+
+---
+
+## Phase 4 — Stock 4-agent 分析
+
+確認 Phase 1.5b 已完成後，把新 engine resource name 寫進 dev env 並 restart：
+
+```bash
+cd ~/digest-agent
+echo "GEAP_RESOURCE_NAME=$(tail -1 deployed-agent-engines.txt | cut -f2)" >> apps/web/.env.local
+tail -3 apps/web/.env.local
+
+# restart dev server
+kill $(lsof -ti:3000) 2>/dev/null
+sleep 2
+cd apps/web && nohup bun run dev > /tmp/dev.log 2>&1 &
+sleep 6
+curl -s http://localhost:3000/api/health && echo
+```
+
+回 Web Preview → **📈 Stock** → 輸入：
+
+```
+近期台積電 vs 聯發科 vs 鴻海
+```
+
+預期看到 4 個 agent 依序串流：
+
+```
+news_collector → industry_analyst → market_analyst → stock_orchestrator
+```
+
+每個 `search_db_articles` tool return 應該標 `"source":"remote_api"`，代表你自家的 GEAP engine 透過 HTTP 從 Cloud Run API 拿到真實近期新聞（不是空的本地 SQLite）。
+
+---
+
+## Phase M4 — （進階）部署自家 Cloud Run UI
+
+如果想完整 close-loop（自家 GEAP engine 連自家 Cloud Run UI），跑：
+
+```bash
+cd ~/digest-agent
+nohup make workshop-deploy-web > /tmp/web-deploy.log 2>&1 &
+tail -f /tmp/web-deploy.log
+```
+
+完成後拿到自己的 `https://digest-agent-web-XXXXX-uc.a.run.app`，用 `admin` / `workshop2026` 登入。
+
+要讓 GEAP engine 改打自家 Cloud Run（取代 prod）：
+
+```bash
+URL=$(gcloud run services describe digest-agent-web --region=us-central1 --format='value(status.url)')
+DIGEST_API_URL="$URL" make workshop-deploy-agent
+```
+
+再回 Phase 4 重跑 Stock 分析，新 source 就是你自家 Cloud Run。
+
+---
+
+## Auth fallback（沒 onramp credit）
+
+跑 `gemini` 時改選 `2. Use Gemini API Key`：
+
+```bash
+# 拿免費 key: https://aistudio.google.com/app/apikey
+export GEMINI_API_KEY=AIza...
+echo 'export GEMINI_API_KEY=AIza...' >> ~/.bashrc
+```
+
+跑 `make workshop-deploy-agent` 時也會自動把這個 key 帶進 GEAP engine。
+
+---
+
+## 常見問題
+
+| 症狀 | 解法 |
 |------|------|
-| 同一 instance、5 分鐘內回來看 | ✅ 資料還在 |
-| Instance 被 Cloud Run 縮容（沒流量數分鐘） | ❌ 資料清空 |
-| 多 instance 同時起來分流 | ❌ 各自的 `/tmp` 不互通 |
-| Cold start（min-instances=0） | ❌ 新 instance = 空 DB |
-
-**Production 升級路徑（Stretch goal，~5 分鐘）**：
-
-```bash
-# 1. 建最便宜的 Cloud SQL Postgres
-gcloud sql instances create digest-pg \
-  --tier=db-f1-micro --region=asia-east1 \
-  --database-version=POSTGRES_15
-
-# 2. 建 db + user
-gcloud sql databases create digest --instance=digest-pg
-gcloud sql users create digest --instance=digest-pg --password=YOUR_PW
-
-# 3. 重新 deploy 並掛 Cloud SQL connector
-gcloud run deploy digest-agent-workshop \
-  --source . --region asia-east1 --port 8080 \
-  --add-cloudsql-instances=PROJECT_ID:asia-east1:digest-pg \
-  --set-env-vars GEMINI_API_KEY=$GEMINI_API_KEY \
-  --set-env-vars "DATABASE_URL=postgresql+psycopg2://digest:YOUR_PW@/digest?host=/cloudsql/PROJECT_ID:asia-east1:digest-pg"
-```
-
-`pyproject.toml` 已裝 `psycopg2-binary`，**不用改任何 code**，換 `DATABASE_URL` 即可。
+| `bun: command not found` 即使 onboarding 跑完 | `source ~/.bashrc` 或開新 Cloud Shell tab |
+| Web Preview 空白 / 卡住 | 看 `tail -30 /tmp/dev.log`，常見是 port 被佔 |
+| `/api/stock-chat` 500 `GEAP_RESOURCE_NAME not set` | Phase 4 第一段 `echo + restart` 漏跑 |
+| Cold start `Cannot find module './361.js'` | `rm -rf apps/web/.next && bun run dev` |
+| Phase 1.5b 卡很久 | tail log 看是否 `Still deploying...` 還在動，typical 4–6 min |
+| Phase 4 分析慢 | 4 agent 串聯 + 真實 LLM call，30–90 秒正常 |
+| Cloud Run deploy `Permission denied` | onramp project billing 沒啟用，到 console 看 |
+| `gemini --version` 報 `node: No such file or directory` | Cloud Shell ⋮ → 重新啟動 VM |
 
 ---
 
-### Phase 4 執行細節（ADK Multi-Agent）
+## 講師補充
 
-銜接語：「剛才你改了一個 AI 的 prompt。接下來我們在同一個 app 裡，
-讓多個 AI 各司其職，協作分析一支股票。」
+**為什麼 Magic Prompt 只用在 Phase 1？**
+Clone + verify 是一次性自動化，學員不知道該打啥指令最好交給 LLM。其他步驟（auth / deploy / start dev / wire env）用 deterministic Make target 或 bash copy-paste 比 prompt 自癒可靠 10 倍——`gemini-cli` safety policy 會擋 `$()` command substitution，跑 5 次有 4 次要 fallback。
 
-**步驟 1 — 確認頁面**
+**架構**
+- Next.js 15 App Router（apps/web）
+- SQLite + Litestream → GCS（Cloud Run 重啟保留 articles）
+- ADK SequentialAgent → ParallelAgent：`news_collector` → `industry_analyst` → `market_analyst` → `stock_orchestrator`
+- Vertex Agent Engine Runtime（managed ADK，免自己跑 server）
 
-告訴學員：「刷新 Web Preview port 8080，左側選單已有📈 個股分析」
-（Phase 1 寫入 .env 時已設定 GOOGLE_API_KEY，Phase 4 直接可用）
-
-**步驟 2 — 先 Fetch 財經新聞（銜接 Phase 1）**
-
-告訴學員：
-1. 點左側「publish」→ Pipeline 操作
-2. 點「▶ 開始 Fetch」→ 等待抓取（約 10 秒）
-3. 看到「✅ 抓取完成！新增 XXX 篇文章」
-4. 「這些新聞等下會被 Phase 4 的 agent 直接從 DB 讀取來分析」
-
-**步驟 3 — 個股分析**
-
-告訴學員：
-1. 點左側「📈 個股分析」
-2. 輸入「台積電AI晶片供應鏈」→ 點「🔍 開始分析」
-3. 等待 30-60 秒（4 個 agent 依序執行）
-4. 看到完整報告：新聞面 + 產業面 + 市場面 + 綜合評估
-5. 「注意新聞面的來源 — yahoo-tw-stock、twse-news — 就是剛才 Fetch 的那批」
-
-**步驟 4 — 展開 Agent 協作細節**
-
-告訴學員：
-1. 往下滾，點「🔍 Agent 協作細節（DevTools）」
-2. 看到每個 agent 的 tool 呼叫紀錄：
-   - `search_db_articles` → 從 DB 搜到台積電相關文章
-   - news_collector、industry_analyst、market_analyst、stock_orchestrator 各自的回應
-3. 「這就像 Chrome F12 — 不用另開工具，看 agent 怎麼分工」
-
-**步驟 5 — 解說架構（口頭，搭配 sidebar 架構圖）**
-
-```
-SequentialAgent（框架保證依序執行）
-├── 1. news_collector     → search_db_articles (讀 Phase 1 的 DB)
-├── 2. industry_analyst   → LLM 產業知識分析
-├── 3. market_analyst     → LLM 市場趨勢分析
-└── 4. stock_orchestrator → 讀取 3 個 output_key → 整合報告
-```
-
-重點說明：
-- 「news_collector 用的 `search_db_articles`，就是去讀你們 Phase 1 Fetch 存進去的新聞」
-- 「output_key 是 agent 之間的便利貼 — news_analysis、industry_analysis、market_analysis」
-- 「最後 stock_orchestrator 把三張便利貼讀出來，整合成你們看到的報告」
-
-**步驟 6 — 動手修改 agent（選做）**
-
-告訴學員：
-```bash
-# 用 Gemini CLI 修改 agent
-gemini -p "打開 agents/stock/industry_agent.py，在 instruction 裡加上『特別關注 AI 晶片供應鏈和 CoWoS 先進封裝產能』"
-```
-回到 Streamlit 再次分析台積電，看報告差異。
-
-完成後：「🎉 恭喜完成所有 Phase！你從一個 RSS 摘要 app 出發，
-一路做到了多個 AI agent 協作的個股分析系統。
-同一個 repo、同一個 Streamlit、從單一 pipeline 進化到 multi-agent。」
+**Phase 4 的 `source: "remote_api"` 是關鍵**
+證明學員自家 GEAP engine 走 HTTP fallback 抓真實新聞，不是空的本地 SQLite，整條 close-loop 通了。
 
 ---
 
-### 常見狀況
+## 進階閱讀
 
-| 狀況 | 處理方式 |
-|------|---------|
-| `gemini --version` 噴 `node: No such file or directory` | 點 ⋮ → 重新啟動 |
-| `uv` 裝完找不到 | `source ~/.bashrc` |
-| Web Preview 空白 / WebSocket 錯誤 | 確認用 `make dev-shell`（已內含修復旗標） |
-| `OperationalError: unable to open database` | `mkdir -p data`（已內含在 `make dev-shell`） |
-| port 8080 沒回應 | `tail -20 /tmp/streamlit.log` |
-| Telegram `chat not found` | 先在 Telegram 對 Bot 按 **Start** |
-| Cloud Run deploy 失敗 | 確認 billing：`gcloud beta billing projects describe <project-id>` |
-| Cloud Run 第一次開很慢 | Cold start，等 10-30 秒重整 |
-| Cloud Run 重啟後新文章不見 | `/tmp` SQLite 是 ephemeral 屬正常 — 升級 Postgres 才能持久化（見 Phase 3 補充） |
-| Gemini API 429 | 摘要數量調低（UI slider） |
-| 沒有 API Key | Mock 模式，摘要是假的但流程完整 |
-| 環境完全壞掉（最後手段） | `sudo rm -rf $HOME` → 點 ⋮ → 重新啟動（**$HOME 全刪**） |
-| 個股分析 400 API key expired | 確認 `export GOOGLE_API_KEY=$GEMINI_API_KEY` |
-| 個股分析 Built-in tools 衝突 | 已修復（最新版本） |
-| Agent 回應很慢 | 正常，4 個 agent 串聯約 30-60 秒 |
-| 只看到新聞面沒有產業/市場面 | 確認用最新版本（SequentialAgent 架構） |
-| `ModuleNotFoundError: agents` | 確認在 `digest-agent/` 目錄下執行 |
-| news_collector 搜不到新聞 | 先回 publish 頁面 Fetch，確保 DB 有資料 |
+- [`Makefile`](./Makefile) — `make`（無參數）看所有 entry-points
+- [`PERSISTENCE.md`](./PERSISTENCE.md) — Litestream + GCS 架構
+- [`GEAP_DEPLOY.md`](./GEAP_DEPLOY.md) — Agent Engine 部署細節
+- [`scripts/README.md`](./scripts/README.md) — script catalog
