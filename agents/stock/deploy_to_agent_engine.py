@@ -109,7 +109,23 @@ def main() -> None:
         print(f"\n⚠️  Found {len(existing)} existing '{DISPLAY_NAME}' engine(s):")
         for e in existing:
             print(f"    - {e.api_resource.name}")
-        ans = input("Delete them all and proceed with fresh deploy? [y/N] ").strip().lower()
+        force = os.environ.get("FORCE_DELETE", "").strip().lower()
+        if force in ("y", "yes", "true", "1"):
+            print("FORCE_DELETE set — auto-deleting existing engines.")
+            ans = "y"
+        elif force in ("n", "no", "false", "0"):
+            print("FORCE_DELETE=no — keeping existing engines, aborting.")
+            sys.exit(0)
+        else:
+            try:
+                ans = input("Delete them all and proceed with fresh deploy? [y/N] ").strip().lower()
+            except EOFError:
+                print(
+                    "❌ stdin closed (likely nohup or non-interactive shell). "
+                    "Set FORCE_DELETE=y to auto-delete or FORCE_DELETE=n to abort.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
         if ans not in ("y", "yes"):
             print("Aborted (existing engines retained).")
             sys.exit(0)
