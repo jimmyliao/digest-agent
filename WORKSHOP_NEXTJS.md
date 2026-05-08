@@ -64,16 +64,24 @@ echo 'export GEMINI_API_KEY=AIza...' >> ~/.bashrc
 
 > ⚠️ 第一次跑時 cwd 在 `~`、還沒 clone，**不能用 `@filename` 指 repo 內檔案**——這個 prompt 自包含所有指令。
 
+**操作（全部 Magic Prompts 通用）**：先 `gemini` 進 interactive 模式，等 `> Type your message` 出現後再貼下面 prompt body 並按 Enter。對齊 0418/0310 慣例，避開 bash quote/智慧引號雜訊。
+
+Step 1（shell）：
 ```bash
-gemini -p "我在 Cloud Shell（第一次或重複跑 workshop）。請：
+gemini
+```
+
+Step 2（在 gemini interactive 裡貼這段）：
+```
+我在 Cloud Shell（第一次或重複跑 workshop）。請：
 1. command -v rg >/dev/null || sudo apt-get install -y ripgrep（gemini-cli 需要，缺了會 fallback warn）
 2. mkdir -p ~/_old
-3. 如果 ~/digest-agent 已存在 → mv ~/digest-agent ~/_old/digest-agent-\$(date +%Y%m%d-%H%M%S)（保留舊版備查）
+3. 如果 ~/digest-agent 已存在 → mv ~/digest-agent ~/_old/digest-agent-$(date +%Y%m%d-%H%M%S)（保留舊版備查）
 4. cd ~ && git clone https://github.com/jimmyliao/digest-agent.git
 5. cd digest-agent && make workshop-verify
    過程會：bun + uv 裝好、bun install + uv sync、scaffold apps/web/.env.local（BASIC_AUTH_DISABLED=1）、bg 起 dev server、curl /api/health、自動關 dev、印 PASS/FAIL
 
-跑完告訴我：rg 版本、bun 版本、uv 版本、health endpoint 回傳、是否全部 ✅"
+跑完告訴我：rg 版本、bun 版本、uv 版本、health endpoint 回傳、是否全部 ✅
 ```
 
 **預期結果**：終端最後印
@@ -91,16 +99,16 @@ gemini -p "我在 Cloud Shell（第一次或重複跑 workshop）。請：
 
 只想裝環境、不要跑 smoke 用這個（例如要先手動填 GEMINI_API_KEY）。
 
-```bash
-gemini -p "@GEMINI.md 我在 Google Cloud Shell（onramp credit 走 Vertex AI 路徑）。請幫我：
+先 `gemini` 進 interactive，再貼下面：
+```
+@GEMINI.md 我在 Google Cloud Shell（onramp credit 走 Vertex AI 路徑）。請幫我：
 1. 跑 make onboard-cloudshell
 2. 確認 bun --version 和 uv --version 都有版號（沒有就提醒重 source ~/.bashrc）
 3. 確認 apps/web/.env.local 已建立、且預設帶有 BASIC_AUTH_DISABLED=1
-4. 把 GOOGLE_CLOUD_PROJECT=\$(gcloud config get-value project) 跟 GOOGLE_CLOUD_LOCATION=us-central1 寫進 apps/web/.env.local
+4. 把 GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project) 跟 GOOGLE_CLOUD_LOCATION=us-central1 寫進 apps/web/.env.local
    （fallback 學員：改寫 GEMINI_API_KEY=AIza... 到 .env.local）
 5. 跑 gcloud services enable aiplatform.googleapis.com 確認 Vertex AI API 已啟用
 6. 印出後續可以跑的兩個下一步指令（dev server + Cloud Run deploy）
-"
 ```
 
 **預期結果**：
@@ -113,15 +121,15 @@ gemini -p "@GEMINI.md 我在 Google Cloud Shell（onramp credit 走 Vertex AI �
 
 ## Magic Prompt 2 — Local dev (Next.js Web Preview port 3000)
 
-```bash
-gemini -p "@GEMINI.md 我已經跑完 onboarding，apps/web/.env.local 也設好 GEMINI_API_KEY。
+先 `gemini` 進 interactive，再貼下面：
+```
+@GEMINI.md 我已經跑完 onboarding，apps/web/.env.local 也設好 GEMINI_API_KEY。
 請幫我：
 1. 確認 port 3000 沒被佔（lsof -ti:3000 | xargs kill 2>/dev/null）
 2. 在背景跑：cd apps/web && nohup bun run dev > /tmp/digest-web.log 2>&1 &
 3. sleep 5 後 curl http://localhost:3000/api/health 確認 200
 4. 失敗的話 tail -30 /tmp/digest-web.log 找原因
 5. 成功就告訴我點 Cloud Shell 右上角 Web Preview → 改 port 3000 → 看 Pipeline 頁
-"
 ```
 
 **預期結果**：
@@ -133,14 +141,14 @@ gemini -p "@GEMINI.md 我已經跑完 onboarding，apps/web/.env.local 也設好
 
 ## Magic Prompt 3 — Run the pipeline real-API smoke
 
-```bash
-gemini -p "@GEMINI.md Next.js dev 已在 port 3000 跑。
+先 `gemini` 進 interactive，再貼下面：
+```
+@GEMINI.md Next.js dev 已在 port 3000 跑。
 請幫我跑 make test-local-api-real（這會打真實 RSS + 真實 Gemini summarize ~3 篇）：
 1. 先驗 dev server 還在（curl /api/health）
 2. 跑 make test-local-api-real
 3. 印出最後的 ✅ 統計（fetched / saved / summarized）
 4. 任何失敗都把 stderr 跟 dev server log /tmp/digest-web.log 一起印
-"
 ```
 
 **預期**：~30-60 秒跑完，看到：
@@ -159,14 +167,15 @@ gemini -p "@GEMINI.md Next.js dev 已在 port 3000 跑。
 >
 > **註**：Cloud Run service 端目前 default 走 `GEMINI_API_KEY` env，原因是 default Cloud Run service account 沒設 Vertex User role；本機 dev 走 Vertex AI，部署到 Cloud Run 時 .env.deploy 仍寫 `GEMINI_API_KEY` 即可。要走純 Vertex AI 部署，需要 grant SA `roles/aiplatform.user`，超出 90min workshop 範圍。
 
-```bash
-gemini -p "@GEMINI.md 請幫我把 apps/web/ deploy 到 Cloud Run。已知：
+先 `gemini` 進 interactive，再貼下面：
+```
+@GEMINI.md 請幫我把 apps/web/ deploy 到 Cloud Run。已知：
 - 我的 GCP_PROJECT=YOUR_PROJECT_ID
 - 我有 GEMINI_API_KEY 在 shell env
 
 依序執行：
 1. echo 'GCP_PROJECT=YOUR_PROJECT_ID' > .env.deploy
-   echo \"GEMINI_API_KEY=\$GEMINI_API_KEY\" >> .env.deploy
+   echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.deploy
    echo 'BASIC_AUTH_USER=admin' >> .env.deploy
    echo 'BASIC_AUTH_PASSWORD=workshop2026' >> .env.deploy
 2. gcloud config set project YOUR_PROJECT_ID
@@ -175,7 +184,6 @@ gemini -p "@GEMINI.md 請幫我把 apps/web/ deploy 到 Cloud Run。已知：
 5. echo 'LITESTREAM_GCS_BUCKET=YOUR_PROJECT_ID-data' >> .env.deploy
 6. make deploy-web   （Cloud Build ~3-5 min）
 7. 印出 Cloud Run URL + 提示用 admin/workshop2026 登入
-"
 ```
 
 **預期**：
@@ -191,15 +199,15 @@ gemini -p "@GEMINI.md 請幫我把 apps/web/ deploy 到 Cloud Run。已知：
 > 5/9 workshop default：在 Phase 1.5 認證後背景跑這個，~3-5 min 完成，Phase 4 接 dev server 用。
 > 5/18 AIA showcase 進階路徑同樣使用這個 prompt（再加上 Cloud Run UI 串接）。
 
-```bash
-gemini -p "@GEMINI.md Phase 1.5 Vertex AI 認證已設好。請幫我背景部署 ADK SequentialAgent 到 GEAP（Vertex AI Agent Engine），Phase 4 stock analysis 會用：
+先 `gemini` 進 interactive，再貼下面：
+```
+@GEMINI.md Phase 1.5 Vertex AI 認證已設好。請幫我背景部署 ADK SequentialAgent 到 GEAP（Vertex AI Agent Engine），Phase 4 stock analysis 會用：
 1. gcloud services enable storage.googleapis.com cloudbuild.googleapis.com（aiplatform 已啟）
-2. PROJECT=\$(gcloud config get-value project)，gsutil mb -l us-central1 gs://\$PROJECT-agents（已存在跳過）
+2. PROJECT=$(gcloud config get-value project)，gsutil mb -l us-central1 gs://$PROJECT-agents（已存在跳過）
 3. uv sync --extra geap
 4. 用 placeholder GEMINI_API_KEY=not-used-engine-runs-on-vertex 跑 nohup make deploy-agent-engine 到 /tmp/geap-deploy.log（runtime 走 Vertex AI，不需要真 key）
 5. 印背景 PID + log path
 完成後（5/18 AIA path）：跑 make invoke-agent-engine 確認 4 個 agent 串流，印 https://console.cloud.google.com/vertex-ai/agents/agent-engines Console URL
-"
 ```
 
 ---
