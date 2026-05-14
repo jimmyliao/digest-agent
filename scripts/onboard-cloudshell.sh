@@ -83,9 +83,16 @@ else
   fi
   curl -fsSL https://bun.sh/install | bash
   export PATH="$HOME/.bun/bin:$PATH"
+  # Also persist into ~/.profile so login shells (e.g. fresh Cloud Shell tab,
+  # gemini-cli child processes) pick up bun without sourcing ~/.bashrc.
+  if [[ -f "$HOME/.profile" ]] && ! grep -q '\.bun/bin' "$HOME/.profile" 2>/dev/null; then
+    echo '' >> "$HOME/.profile"
+    echo '# Added by digest-agent onboard-cloudshell.sh' >> "$HOME/.profile"
+    echo 'export PATH="$HOME/.bun/bin:$PATH"' >> "$HOME/.profile"
+  fi
   if command -v bun >/dev/null 2>&1; then
     ok "Bun $(bun --version) installed at $HOME/.bun/bin/bun"
-    echo "  → New shells will pick up bun from ~/.bashrc automatically."
+    echo "  → New shells will pick up bun from ~/.bashrc / ~/.profile automatically."
     echo "  → For THIS shell, export already done in-script."
   else
     warn "bun install completed but binary not on PATH. Run:"
@@ -179,9 +186,17 @@ echo "${GREEN}${BOLD}═══════════════════�
 echo "${GREEN}${BOLD}  ✅ Onboarding complete on $ENV_LABEL${OFF}"
 echo "${GREEN}${BOLD}════════════════════════════════════════${OFF}"
 echo ""
+if [[ -d "$HOME/.bun/bin" ]] && ! command -v bun >/dev/null 2>&1; then
+  echo "${YELLOW}${BOLD}⚠️  bun installed but not on this shell's PATH yet.${OFF}"
+  echo "${YELLOW}   Run this BEFORE the next \`bun\` command:${OFF}"
+  echo "${YELLOW}     export PATH=\"\$HOME/.bun/bin:\$PATH\"${OFF}"
+  echo "${YELLOW}   (Or open a new Cloud Shell tab — ~/.profile / ~/.bashrc are now updated.)${OFF}"
+  echo ""
+fi
 echo "Quick start:"
 echo ""
 echo "  ${BOLD}Next.js path (Cloud Run target)${OFF}:"
+echo "    export PATH=\"\$HOME/.bun/bin:\$PATH\"   # ensure bun is on PATH"
 echo "    cd apps/web && bun run dev"
 echo "    open http://localhost:3000"
 echo ""
