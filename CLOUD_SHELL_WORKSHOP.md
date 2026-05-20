@@ -76,14 +76,35 @@
 
 ```
 @CLOUD_SHELL_WORKSHOP.md 請帶我把 digest-agent 部署到 Cloud Run。
-我的 GCP Project ID 是：（填入你的 Project ID）
+我的 GCP Project ID 是：<PROJECT_ID>
+（單一活動可填 workshop 用 project ID；自己 demo 填你自己的）
+
+注意：如果是 workshop 共用 project（40+ 人同個 project），service name
+不能撞名。請：
+  1. 先產生 USER_SLUG=$(echo "$USER" | tr '_.' '-' | tr '[:upper:]' '[:lower:]')
+  2. 用 SERVICE_NAME=digest-agent-workshop-${USER_SLUG} 環境變數覆蓋預設
+  3. 跑：SERVICE_NAME=digest-agent-workshop-${USER_SLUG} GEMINI_API_KEY=... make deploy-workshop
 ```
 
 **預期結果：**
-- Gemini 啟用必要 GCP API、執行 `make deploy-workshop`
+- Gemini 啟用必要 GCP API
+- 自動產生個人化 SERVICE_NAME（如 `digest-agent-workshop-alice-wang`）
+- 執行 `make deploy-workshop`
 - Cloud Build 打包約 3-5 分鐘
-- 拿到一個 `https://digest-agent-workshop-xxxx.asia-east1.run.app` 公開 URL
+- 拿到一個 `https://digest-agent-workshop-${USER_SLUG}-xxxx.asia-east1.run.app` 公開 URL
 - 任何人用瀏覽器打開都能看到 Dashboard，不需要 Cloud Shell
+
+**為什麼要 USER_SLUG？**
+40 人共用同個 GCP project 時，service name 必須唯一。
+單獨使用（你自己的 project）不必設，預設 `digest-agent-workshop` 即可。
+
+**懶人版（如果你的 Cloud Shell 已經選好 project）：**
+```bash
+# Cloud Shell 自動帶 project，可以從 gcloud config 抓
+PROJECT_ID=$(gcloud config get-value project)
+echo "Active project: $PROJECT_ID"
+# 沒帶 project 才需要：gcloud config set project YOUR_PROJECT_ID
+```
 
 ---
 
@@ -270,15 +291,24 @@ export TELEGRAM_CHAT_ID=你的chat-id
 
 詢問學員的 GCP Project ID（Cloud Shell 左上角可以看到）。
 
+**若為 workshop 共用 project**（40+ 人），先產生個人化 service name：
+```bash
+export USER_SLUG=$(echo "$USER" | tr '_.' '-' | tr '[:upper:]' '[:lower:]')
+export SERVICE_NAME=digest-agent-workshop-${USER_SLUG}
+echo "Will deploy as: $SERVICE_NAME"
+```
+
+部署：
 ```bash
 gcloud config set project 學員的project-id
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-GEMINI_API_KEY=$GEMINI_API_KEY make deploy-workshop
+SERVICE_NAME=$SERVICE_NAME GEMINI_API_KEY=$GEMINI_API_KEY make deploy-workshop
+# 單獨使用（自己 project）省略 SERVICE_NAME 即可，預設 digest-agent-workshop
 ```
 
-部署約 3-5 分鐘。完成後：
+部署約 3-5 分鐘。完成後查 URL：
 ```bash
-gcloud run services describe digest-agent-workshop --region asia-east1 --format 'value(status.url)'
+gcloud run services describe $SERVICE_NAME --region asia-east1 --format 'value(status.url)'
 ```
 
 驗證並告訴學員：「🎉 恭喜！Cloud Run URL 可以分享給任何人！」
