@@ -76,7 +76,8 @@
 
 ```
 @CLOUD_SHELL_WORKSHOP.md 請帶我把 digest-agent 部署到 Cloud Run。
-我的 GCP Project ID 是：（填入你的 Project ID）
+我的 GCP Project ID 是：<PROJECT_ID>
+（單一活動可填 workshop 用 project ID；自己 demo 填你自己的）
 
 注意：如果是 workshop 共用 project（40+ 人同個 project），service name
 不能撞名。請：
@@ -96,6 +97,14 @@
 **為什麼要 USER_SLUG？**
 40 人共用同個 GCP project 時，service name 必須唯一。
 單獨使用（你自己的 project）不必設，預設 `digest-agent-workshop` 即可。
+
+**懶人版（如果你的 Cloud Shell 已經選好 project）：**
+```bash
+# Cloud Shell 自動帶 project，可以從 gcloud config 抓
+PROJECT_ID=$(gcloud config get-value project)
+echo "Active project: $PROJECT_ID"
+# 沒帶 project 才需要：gcloud config set project YOUR_PROJECT_ID
+```
 
 ---
 
