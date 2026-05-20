@@ -8,6 +8,8 @@ RUN uv sync --no-dev --frozen 2>/dev/null || uv sync --no-dev
 
 COPY src/ ./src/
 COPY config/ ./config/
+COPY agents/ ./agents/
+COPY leapcore_iface/ ./leapcore_iface/
 
 RUN mkdir -p /app/data
 
