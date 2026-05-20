@@ -105,26 +105,52 @@ deploy-dry-run:
 	@echo "👉 Run 'GEMINI_API_KEY=xxx make deploy-workshop' to actually deploy."
 
 # Workshop / quick demo: no Secret Manager needed, SQLite in container
-# Usage:
-#   solo:        GEMINI_API_KEY=xxx make deploy-workshop
-#   workshop:    SERVICE_NAME=digest-agent-workshop-alice GEMINI_API_KEY=xxx make deploy-workshop
-#                ↑ 40+ attendees sharing one project — SERVICE_NAME must be unique per user
+# Two auth modes:
+#   1. AI Studio (default for solo):
+#        GEMINI_API_KEY=xxx make deploy-workshop
+#   2. Vertex AI / GCP project (workshop, no individual API key):
+#        USE_VERTEX_AI=true GCP_PROJECT=gdg-ws-0523 make deploy-workshop
+#
+# SERVICE_NAME: 40+ attendees sharing one project must override
+#   SERVICE_NAME=digest-agent-workshop-alice ... make deploy-workshop
 SERVICE_NAME ?= digest-agent-workshop
+GCP_LOCATION ?= us-central1
 
 deploy-workshop:
-	@if [ -z "$(GEMINI_API_KEY)" ]; then \
-	  echo "❌ GEMINI_API_KEY is not set. Usage: GEMINI_API_KEY=xxx make deploy-workshop"; \
+	@if [ "$(USE_VERTEX_AI)" != "true" ] && [ -z "$(GEMINI_API_KEY)" ]; then \
+	  echo "❌ Neither USE_VERTEX_AI=true nor GEMINI_API_KEY is set."; \
+	  echo "   Solo:      GEMINI_API_KEY=xxx make deploy-workshop"; \
+	  echo "   Workshop:  USE_VERTEX_AI=true GCP_PROJECT=xxx make deploy-workshop"; \
+	  exit 1; \
+	fi
+	@if [ "$(USE_VERTEX_AI)" = "true" ] && [ -z "$(GCP_PROJECT)" ]; then \
+	  echo "❌ USE_VERTEX_AI=true requires GCP_PROJECT=xxx"; \
 	  exit 1; \
 	fi
 	@echo "🚀 Deploying service: $(SERVICE_NAME)"
-	gcloud run deploy $(SERVICE_NAME) \
-	  --source . \
-	  --region asia-east1 \
-	  --platform managed \
-	  --allow-unauthenticated \
-	  --port 8080 \
-	  --set-env-vars "GEMINI_API_KEY=$(GEMINI_API_KEY)" \
-	  --set-env-vars "DATABASE_URL=sqlite:////tmp/digest.db"
+	@if [ "$(USE_VERTEX_AI)" = "true" ]; then \
+	  echo "   Auth: Vertex AI ($(GCP_PROJECT)/$(GCP_LOCATION))"; \
+	  gcloud run deploy $(SERVICE_NAME) \
+	    --source . \
+	    --region asia-east1 \
+	    --platform managed \
+	    --allow-unauthenticated \
+	    --port 8080 \
+	    --set-env-vars "GOOGLE_GENAI_USE_VERTEXAI=true" \
+	    --set-env-vars "GOOGLE_CLOUD_PROJECT=$(GCP_PROJECT)" \
+	    --set-env-vars "GOOGLE_CLOUD_LOCATION=$(GCP_LOCATION)" \
+	    --set-env-vars "DATABASE_URL=sqlite:////tmp/digest.db"; \
+	else \
+	  echo "   Auth: AI Studio API key"; \
+	  gcloud run deploy $(SERVICE_NAME) \
+	    --source . \
+	    --region asia-east1 \
+	    --platform managed \
+	    --allow-unauthenticated \
+	    --port 8080 \
+	    --set-env-vars "GEMINI_API_KEY=$(GEMINI_API_KEY)" \
+	    --set-env-vars "DATABASE_URL=sqlite:////tmp/digest.db"; \
+	fi
 
 # GEAP / Vertex AI Agent Engine: deploy agents/stock SequentialAgent as managed agent
 # Usage: GCP_PROJECT=xxx STAGING_BUCKET=gs://xxx GEMINI_API_KEY=xxx make deploy-agent-engine

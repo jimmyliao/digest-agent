@@ -76,14 +76,29 @@ class GeminiSummarizer:
         self.prompt_manager = PromptManager()
         self._rate_limiter = RateLimiter(self.RATE_LIMIT_PER_MINUTE)
 
-        # Mock mode: explicit flag or auto-detect when no API key
+        # Vertex AI mode: when GOOGLE_GENAI_USE_VERTEXAI=true (Cloud Shell / Cloud Run
+        # workshop path), authenticate via ADC + project IAM instead of API key.
+        # Requires GOOGLE_CLOUD_PROJECT + GOOGLE_CLOUD_LOCATION env vars.
+        self.use_vertex_ai = (
+            os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true"
+        )
+
+        # Mock mode: explicit flag, else auto-detect (no API key AND not Vertex AI)
         if mock_mode is not None:
             self.mock_mode = mock_mode
+        elif self.use_vertex_ai:
+            self.mock_mode = False
         else:
             self.mock_mode = not bool(self.api_key)
 
         if self.mock_mode:
             logger.warning("GeminiSummarizer running in MOCK mode (no API key)")
+        elif self.use_vertex_ai:
+            logger.info(
+                "GeminiSummarizer using Vertex AI mode (project=%s location=%s)",
+                os.environ.get("GOOGLE_CLOUD_PROJECT", "<unset>"),
+                os.environ.get("GOOGLE_CLOUD_LOCATION", "<unset>"),
+            )
 
         # Cumulative usage tracking
         self.total_input_tokens = 0
@@ -119,7 +134,13 @@ class GeminiSummarizer:
         return result
 
     def _get_client(self):
-        """Initialize and return a google-genai Client."""
+        """Initialize and return a google-genai Client.
+
+        Two auth paths:
+        - Vertex AI (workshop / GCP): GOOGLE_GENAI_USE_VERTEXAI=true → ADC
+          + project IAM. SDK auto-picks up GOOGLE_CLOUD_{PROJECT,LOCATION}.
+        - AI Studio (solo dev): GEMINI_API_KEY → public Gemini API.
+        """
         try:
             from google import genai
         except ImportError:
@@ -127,6 +148,8 @@ class GeminiSummarizer:
                 "google-genai package is required. "
                 "Install it with: pip install google-genai"
             )
+        if self.use_vertex_ai:
+            return genai.Client()  # reads GOOGLE_GENAI_USE_VERTEXAI + GOOGLE_CLOUD_*
         return genai.Client(api_key=self.api_key)
 
     async def summarize_batch(
