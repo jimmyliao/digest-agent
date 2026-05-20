@@ -30,8 +30,9 @@
 
 ---
 
-## ✨ Phase 1 Magic Prompt
+## ✨ Phase 1 Magic Prompt（AI Studio 路徑 — 個人 demo / solo）
 > 安裝環境 + Clone + 啟動 Streamlit + Web Preview
+> 用個人從 AI Studio 申請的 GEMINI_API_KEY
 
 ```
 請幫我依序執行（每步確認成功再繼續，用繁體中文回覆）：
@@ -45,6 +46,27 @@
 8. nohup make dev-shell > /tmp/streamlit.log 2>&1 &
 9. sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
 10. 看到 200 後，告訴我點 Cloud Shell 右上角 Web Preview → port 8080
+```
+
+## ✨ Phase 1 Magic Prompt（GCP / Vertex AI 路徑 — workshop 共用 project）
+> 不用 AI Studio API key，直接吃 workshop project 的 Vertex AI quota
+> 避開 AI Studio free tier 5/min 限額（40 人會撞）
+
+```
+請幫我依序執行（每步確認成功再繼續，用繁體中文回覆）：
+1. curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc。另外確認有沒有 bun 執行檔（command -v bun），沒有就 curl -fsSL https://bun.com/install | bash && source ~/.bashrc
+2. git clone https://github.com/jimmyliao/digest-agent.git && cd digest-agent
+3. uv sync --all-extras
+4. cp .env.example .env，然後設 Vertex AI mode（不用 API key）：
+   sed -i 's|GEMINI_API_KEY=.*|GEMINI_API_KEY=|' .env
+   echo "GOOGLE_GENAI_USE_VERTEXAI=true" >> .env
+   echo "GOOGLE_CLOUD_PROJECT=$(gcloud config get-value project)" >> .env
+   echo "GOOGLE_CLOUD_LOCATION=us-central1" >> .env
+   cat .env | grep -E "GOOGLE_|GEMINI_"
+5. 驗證 Vertex AI 可用：source .env && uv run python -c "import os; os.environ['GOOGLE_GENAI_USE_VERTEXAI']='true'; from google import genai; c=genai.Client(); r=c.models.generate_content(model='gemini-2.5-flash', contents='說 OK'); print('Vertex AI 驗證成功：', r.text[:20])"。如果失敗代表你帳號沒有 aiplatform.user 權限，聯絡講師
+6. nohup make dev-shell > /tmp/streamlit.log 2>&1 &
+7. sleep 5 && curl -s -o /dev/null -w "%{http_code}" http://localhost:8080
+8. 看到 200 後，告訴我點 Cloud Shell 右上角 Web Preview → port 8080
 ```
 
 **預期結果：**
@@ -71,19 +93,50 @@
 
 ---
 
-## ✨ Phase 3 Magic Prompt
-> 部署到 Cloud Run，拿到公開 URL
+## ✨ Phase 3 Magic Prompt — AI Studio 路徑（個人 / solo）
+> 部署到 Cloud Run，用個人 AI Studio API key
 
 ```
 @CLOUD_SHELL_WORKSHOP.md 請帶我把 digest-agent 部署到 Cloud Run。
-我的 GCP Project ID 是：（填入你的 Project ID）
+我的 GCP Project ID 是：<PROJECT_ID>
+
+請依序：
+1. git pull
+2. export USER_SLUG=$(echo "$USER" | tr '_.' '-' | tr '[:upper:]' '[:lower:]')
+3. export SERVICE_NAME=digest-agent-workshop-${USER_SLUG}
+4. gcloud config set project <PROJECT_ID>
+5. SERVICE_NAME=$SERVICE_NAME GEMINI_API_KEY=$GEMINI_API_KEY make deploy-workshop
+6. 部署完成後印 URL 並 curl 驗證
+```
+
+## ✨ Phase 3 Magic Prompt — Vertex AI 路徑（workshop 共用 project）
+> 不用 API key，runtime 走 Vertex AI（吃 project quota）
+
+```
+@CLOUD_SHELL_WORKSHOP.md 請帶我把 digest-agent 部署到 Cloud Run（Vertex AI 模式）。
+我的 GCP Project ID 是：<PROJECT_ID>
+
+注意：
+- workshop 共用 project，service name 要加 USER_SLUG 避免撞名
+- 跳過 `gcloud services enable`（講師已預啟用 API；學員無 serviceusage.admin 權限）
+- 走 USE_VERTEX_AI 模式，不需要 GEMINI_API_KEY
+
+請依序：
+1. git pull
+2. export USER_SLUG=$(echo "$USER" | tr '_.' '-' | tr '[:upper:]' '[:lower:]')
+3. export SERVICE_NAME=digest-agent-workshop-${USER_SLUG}
+4. export GCP_PROJECT=<PROJECT_ID>
+5. gcloud config set project $GCP_PROJECT
+6. SERVICE_NAME=$SERVICE_NAME USE_VERTEX_AI=true GCP_PROJECT=$GCP_PROJECT make deploy-workshop
+7. 部署完成後印 URL 並 curl 驗證
 ```
 
 **預期結果：**
-- Gemini 啟用必要 GCP API、執行 `make deploy-workshop`
+- 自動產生個人化 SERVICE_NAME（如 `digest-agent-workshop-alice-wang`）
 - Cloud Build 打包約 3-5 分鐘
-- 拿到一個 `https://digest-agent-workshop-xxxx.asia-east1.run.app` 公開 URL
-- 任何人用瀏覽器打開都能看到 Dashboard，不需要 Cloud Shell
+- 拿到 `https://digest-agent-workshop-${USER_SLUG}-xxxx.asia-east1.run.app`
+- 任何人用瀏覽器打開都能看到 Dashboard
+- Runtime 用 Vertex AI（GOOGLE_GENAI_USE_VERTEXAI=true）吃 project quota
 
 ---
 
