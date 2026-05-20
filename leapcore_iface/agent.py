@@ -20,7 +20,7 @@ class AgentBase(ABC):
 
     Attributes:
         name: Unique agent identifier.
-        model: LLM model name or endpoint (e.g. ``"gemini-2.0-flash"``).
+        model: LLM model name or endpoint (e.g. ``"gemini-2.5-flash"``).
         instruction: System prompt / persona that guides agent behaviour.
         tools: Tools the agent is allowed to invoke.
     """
