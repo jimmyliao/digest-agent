@@ -35,7 +35,7 @@
 
 ```
 請幫我依序執行（每步確認成功再繼續，用繁體中文回覆）：
-1. curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
+1. curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc。另外確認有沒有 bun 執行檔（command -v bun），沒有就 curl -fsSL https://bun.com/install | bash && source ~/.bashrc
 2. git clone https://github.com/jimmyliao/digest-agent.git && cd digest-agent
 3. uv sync --all-extras
 4. 問我要 GEMINI_API_KEY（從 https://aistudio.google.com/app/apikey 取得，沒有可跳過進 Mock 模式）
@@ -186,10 +186,15 @@ gemini --version
 - ✅ 有版本號 → 繼續
 - ❌ `node: No such file or directory` → 告訴學員點右上角 ⋮ → **重新啟動**
 
-**步驟 1 — 安裝 uv**
+**步驟 1 — 安裝 uv + bun**
 ```bash
+# uv
 curl -Ls https://astral.sh/uv/install.sh | sh && source ~/.bashrc
 uv --version
+
+# bun（部分 Phase 4 / Cloud Run deploy 流程需要；若已存在會跳過）
+command -v bun || (curl -fsSL https://bun.com/install | bash && source ~/.bashrc)
+bun --version
 ```
 
 **步驟 2 — Clone + 安裝**
