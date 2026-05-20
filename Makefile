@@ -105,13 +105,19 @@ deploy-dry-run:
 	@echo "👉 Run 'GEMINI_API_KEY=xxx make deploy-workshop' to actually deploy."
 
 # Workshop / quick demo: no Secret Manager needed, SQLite in container
-# Usage: GEMINI_API_KEY=xxx make deploy-workshop
+# Usage:
+#   solo:        GEMINI_API_KEY=xxx make deploy-workshop
+#   workshop:    SERVICE_NAME=digest-agent-workshop-alice GEMINI_API_KEY=xxx make deploy-workshop
+#                ↑ 40 attendees sharing one project — SERVICE_NAME must be unique per user
+SERVICE_NAME ?= digest-agent-workshop
+
 deploy-workshop:
 	@if [ -z "$(GEMINI_API_KEY)" ]; then \
 	  echo "❌ GEMINI_API_KEY is not set. Usage: GEMINI_API_KEY=xxx make deploy-workshop"; \
 	  exit 1; \
 	fi
-	gcloud run deploy digest-agent-workshop \
+	@echo "🚀 Deploying service: $(SERVICE_NAME)"
+	gcloud run deploy $(SERVICE_NAME) \
 	  --source . \
 	  --region asia-east1 \
 	  --platform managed \
